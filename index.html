@@ -129,12 +129,12 @@ details[open] summary{margin-bottom:10px}
 <!-- 2 -->
 <section class="step" id="s2">
   <div class="step-h"><div class="num">2</div><h2>Transcrever o áudio</h2></div>
-  <p>A transcrição roda aqui no celular. Na primeira vez o app baixa o modelo de fala (uns 80 MB no modo normal), depois fica guardado.</p>
+  <p>A transcrição roda aqui no celular. Na primeira vez o app baixa o modelo de fala (uns 40 MB no modo leve), depois fica guardado.</p>
   <div class="row">
     <label>Qualidade
       <select id="asrModel">
-        <option value="Xenova/whisper-base">Normal (~80 MB)</option>
-        <option value="Xenova/whisper-tiny">Leve, para celular mais fraco (~40 MB)</option>
+        <option value="Xenova/whisper-tiny">Leve (~40 MB), recomendado no celular</option>
+        <option value="Xenova/whisper-base">Normal (~80 MB), precisa de mais memória</option>
         <option value="Xenova/whisper-small">Preciso, só celular forte (~250 MB)</option>
       </select>
     </label>
@@ -142,6 +142,10 @@ details[open] summary{margin-bottom:10px}
   <button class="btn primary" id="btnTranscribe" disabled>Transcrever</button>
   <div class="bar" id="asrBar" hidden><i></i></div>
   <div class="msg" id="asrMsg"></div>
+  <div id="geminiBox" hidden style="display:flex;flex-direction:column;gap:8px">
+    <p>Se o celular continuar fechando a página, faça a transcrição no Gemini: o botão copia o pedido, você anexa o vídeo lá e cola o texto aqui embaixo.</p>
+    <a class="btn" id="btnGemini" href="https://gemini.google.com/app" target="_blank" rel="noopener">Transcrever no Gemini</a>
+  </div>
   <label>Texto do vídeo
     <textarea id="transcript" placeholder="A transcrição aparece aqui. Você pode corrigir à vontade."></textarea>
   </label>
@@ -291,7 +295,7 @@ function bindSaved(id, key, ev='input'){
   if (v != null){ if (el.type==='checkbox') el.checked = v; else el.value = v; }
   el.addEventListener(ev, () => store.set(key, el.type==='checkbox' ? el.checked : el.value));
 }
-['#fishKey:fishKey','#voiceId:voiceId','#fishModel:fishModel','#speed:speed','#asrModel:asrModel','#transcript:transcript','#rewritten:rewritten','#postText:postText','#capWords:capWords','#capColor:capColor','#capPos:capPos','#capSize:capSize','#capUpper:capUpper','#scale:scale','#offsetY:offsetY','#bgColor:bgColor']
+['#fishKey:fishKey','#voiceId:voiceId','#fishModel:fishModel','#speed:speed','#asrModel:asrModel2','#transcript:transcript','#rewritten:rewritten','#postText:postText','#capWords:capWords','#capColor:capColor','#capPos:capPos','#capSize:capSize','#capUpper:capUpper','#scale:scale','#offsetY:offsetY','#bgColor:bgColor']
   .forEach(p => { const [id,k] = p.split(':'); bindSaved(id, k, (id==='#capUpper'||id.includes('Model')||id==='#capWords'||id==='#capColor') ? 'change' : 'input'); });
 
 const S = {
@@ -394,15 +398,28 @@ function transcribe(file, barId, msgId){
           setMsg(msgId, `Transcrevendo… ${Math.floor(sec)}s. Não travou, é só aguardar.`);
           setBar(barId, 0.6 + 0.38 * (1 - Math.exp(-sec / est))); }, 1000);
         setMsg(msgId, 'Transcrevendo…'); setBar(barId, 0.6); }
-      else if (d.type==='done'){ stop(); setBar(barId, null); resolve(d); }
-      else if (d.type==='error'){ stop(); setBar(barId, null); reject(new Error('A transcrição falhou: ' + d.msg)); }
+      else if (d.type==='done'){ stop(); S.busy = false; store.set('asrRunning', null); setBar(barId, null); resolve(d); }
+      else if (d.type==='error'){ stop(); S.busy = false; store.set('asrRunning', null); setBar(barId, null); reject(new Error('A transcrição falhou: ' + d.msg)); }
     };
     const device = 'wasm';
+    store.set('asrRunning', $('#asrModel').value); S.busy = true; $('#srcVideo').pause();
     const secs = audio.length / 16000;
     w.postMessage({ audio, model: $('#asrModel').value, device }, [audio.buffer]);
     audio = { length: secs * 16000 };
   });
 }
+$('#btnGemini').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText('Transcreva palavra por palavra a fala do vídeo anexado, em português do Brasil. Responda só com o texto falado, sem comentários.'); setMsg('#asrMsg','Pedido copiado. No Gemini, anexe o vídeo, cole o pedido e envie.','ok'); } catch {}
+});
+/* se a página caiu durante a transcrição, na próxima abertura o app avisa e troca para o modo leve */
+(function crashCheck(){
+  const was = store.get('asrRunning', null);
+  if (!was) return;
+  store.set('asrRunning', null);
+  $('#geminiBox').hidden = false;
+  if (was !== 'Xenova/whisper-tiny'){ $('#asrModel').value = 'Xenova/whisper-tiny'; store.set('asrModel2', 'Xenova/whisper-tiny'); setMsg('#asrMsg','Da última vez o celular ficou sem memória. Troquei para o modo Leve, tente de novo.','err'); }
+  else setMsg('#asrMsg','Da última vez o celular ficou sem memória, mesmo no modo Leve. Feche os outros apps e tente de novo, ou use o Gemini.','err');
+})();
 $('#btnTranscribe').addEventListener('click', async () => {
   const b = $('#btnTranscribe'); b.disabled = true;
   try{
@@ -824,7 +841,7 @@ $('#btnShare').addEventListener('click', async () => {
     }
   }
   function tick(t){
-    if (!document.hidden && !S.exporting && !S.playing){
+    if (!document.hidden && !S.exporting && !S.playing && !S.busy){
       for (const p of P){ p.y += p.vy; p.x += Math.sin(t/2000 + p.ph)*0.15; if (p.y < -20){ p.y = H + 20; p.x = Math.random()*W; } }
       draw(t);
     }
