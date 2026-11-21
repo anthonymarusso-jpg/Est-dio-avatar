@@ -80,6 +80,14 @@ video.thumb{max-height:320px}
 .theme[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 12px rgba(56,242,224,.5)}
 .stage{display:flex;justify-content:center}
 #preview{width:min(100%,320px);aspect-ratio:9/16;border-radius:12px;background:#000;display:block;box-shadow:0 0 0 1px var(--line),0 0 30px rgba(56,242,224,.15)}
+.voices{display:flex;flex-direction:column;gap:6px;max-height:320px;overflow:auto}
+.voice{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:8px;color:var(--fg);cursor:pointer;font:15px var(--f-ui)}
+.voice[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 10px rgba(56,242,224,.4)}
+.voice img,.voice .ph{width:44px;height:44px;border-radius:8px;object-fit:cover;background:var(--line)}
+.voice b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.voice small{color:var(--muted);font-size:12px}
+.voice .play{min-height:36px;padding:6px 10px}
+.voice>div{min-width:0}
 .caps{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow:auto;padding-right:4px}
 .cap{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center}
 .cap code{font:500 12px var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
@@ -184,7 +192,18 @@ details[open] summary{margin-bottom:10px}
   <div class="step-h"><div class="num">4</div><h2>Gerar a voz</h2><span class="tag">Fish Audio</span></div>
   <p>Gera o áudio do texto novo com a voz que você escolher no Fish Audio.</p>
   <div class="row">
-    <label>ID da voz
+    <label>Buscar voz pelo nome
+      <input id="voiceSearch" type="text" placeholder="ex.: repórter, locutor, narradora" autocomplete="off" enterkeyhint="search">
+    </label>
+  </div>
+  <div class="row">
+    <button class="btn" id="btnVoiceSearch">Buscar</button>
+    <button class="btn" id="btnMyVoices">Minhas vozes</button>
+  </div>
+  <div class="msg" id="voiceMsg"></div>
+  <div class="voices" id="voiceList"></div>
+  <div class="row">
+    <label>Voz escolhida (ID)
       <input id="voiceId" type="text" placeholder="ex.: 7f92f8afb8ec43bf81429cc1c9199cb1" autocomplete="off">
     </label>
     <label>Modelo
@@ -570,6 +589,66 @@ $('#btnFishSite').addEventListener('click', async () => {
   catch { setMsg('#ttsMsg','Copie o texto do passo 3 e cole no Fish Audio.'); }
   markDone(4);
 });
+
+/* busca de vozes no Fish Audio pelo nome */
+const NO_POLITICS = /\b(lula|bolsonaro|dilma|haddad|alckmin|tarc[ií]sio|janja|moraes|boulos|nikolas|ciro gomes|temer|marina silva|trump|biden)\b/i;
+let voiceAudio = null;
+async function searchVoices(mine){
+  const key = $('#fishKey').value.trim();
+  if (!key){ document.querySelector('#s4 details').open = true; return setMsg('#voiceMsg','Coloque a chave da API do Fish Audio (embaixo, em "Chave da API do Fish Audio").','err'); }
+  const q = $('#voiceSearch').value.trim();
+  if (!mine && !q) return setMsg('#voiceMsg','Digite um nome para buscar.','err');
+  const params = new URLSearchParams({ page_size:'30', sort_by:'task_count' });
+  if (mine) params.set('self','true'); else params.set('title', q);
+  setMsg('#voiceMsg','Buscando…'); $('#voiceList').innerHTML = '';
+  try {
+    const res = await fetch('https://api.fish.audio/model?' + params, { headers:{ 'Authorization':'Bearer ' + key } });
+    if (res.status === 401) throw new Error('Chave do Fish Audio recusada. Confira a chave.');
+    if (!res.ok) throw new Error('O Fish Audio respondeu erro ' + res.status + '.');
+    const j = await res.json();
+    const all = j.items || [], items = all.filter(v => !NO_POLITICS.test((v.title || '') + ' ' + (v.description || '')));
+    if (!items.length) return setMsg('#voiceMsg', mine ? 'Você ainda não tem vozes próprias no Fish Audio.' : 'Nenhuma voz com esse nome. Tente outra palavra.', 'err');
+    setMsg('#voiceMsg', `${items.length} vozes encontradas. Toque para escolher.` + (all.length > items.length ? ' Vozes de políticos ficam de fora.' : ''), 'ok');
+    renderVoices(items);
+  } catch (e) {
+    setMsg('#voiceMsg', e instanceof TypeError ? 'O Fish Audio não aceitou a conexão direta do celular. Copie o ID no site do Fish Audio e cole no campo abaixo.' : e.message, 'err');
+  }
+}
+function renderVoices(items){
+  const box = $('#voiceList'); box.innerHTML = '';
+  const current = $('#voiceId').value.trim();
+  items.forEach(v => {
+    const b = document.createElement('div'); b.className = 'voice'; b.setAttribute('role','button'); b.tabIndex = 0;
+    b.setAttribute('aria-pressed', v._id === current);
+    let pic;
+    if (v.cover_image){ pic = document.createElement('img'); pic.alt = ''; pic.loading = 'lazy'; pic.src = /^https?:/.test(v.cover_image) ? v.cover_image : 'https://public-platform.r2.fish.audio/' + v.cover_image; pic.onerror = () => pic.replaceWith(Object.assign(document.createElement('div'), { className:'ph' })); }
+    else { pic = document.createElement('div'); pic.className = 'ph'; }
+    const info = document.createElement('div');
+    const t = document.createElement('b'); t.textContent = v.title || 'Sem nome';
+    const sm = document.createElement('small'); sm.textContent = [v.author?.nickname, (v.languages || []).join(', ').toUpperCase(), v.task_count ? v.task_count.toLocaleString('pt-BR') + ' usos' : ''].filter(Boolean).join(' · ');
+    info.append(t, sm);
+    const sample = (v.samples || []).find(x => x && x.audio);
+    const play = document.createElement('button'); play.type = 'button'; play.className = 'btn play'; play.textContent = '▶'; play.setAttribute('aria-label','Ouvir amostra');
+    if (!sample) play.disabled = true;
+    play.addEventListener('click', e => {
+      e.stopPropagation();
+      if (voiceAudio) voiceAudio.pause();
+      const url = /^https?:/.test(sample.audio) ? sample.audio : 'https://public-platform.r2.fish.audio/' + sample.audio;
+      voiceAudio = new Audio(url); voiceAudio.play().catch(() => setMsg('#voiceMsg','Não consegui tocar a amostra dessa voz.','err'));
+    });
+    const pick = () => {
+      $('#voiceId').value = v._id; store.set('voiceId', v._id); store.set('voiceName', v.title || '');
+      box.querySelectorAll('.voice').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed','true');
+      setMsg('#voiceMsg', `Voz escolhida: ${v.title}.`, 'ok');
+    };
+    b.addEventListener('click', pick); b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+    b.append(pic, info, play); box.append(b);
+  });
+}
+$('#btnVoiceSearch').addEventListener('click', () => searchVoices(false));
+$('#btnMyVoices').addEventListener('click', () => searchVoices(true));
+$('#voiceSearch').addEventListener('keydown', e => { if (e.key === 'Enter') searchVoices(false); });
+if (store.get('voiceName', '')) setMsg('#voiceMsg', 'Voz escolhida: ' + store.get('voiceName', '') + '.', 'ok');
 
 /* ---------- 5. DreamFace ---------- */
 $('#btnDreamDone').addEventListener('click', () => { markDone(5); $('#s6').scrollIntoView({behavior:'smooth'}); });
