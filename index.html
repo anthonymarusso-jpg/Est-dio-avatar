@@ -129,12 +129,13 @@ details[open] summary{margin-bottom:10px}
 <!-- 2 -->
 <section class="step" id="s2">
   <div class="step-h"><div class="num">2</div><h2>Transcrever o áudio</h2></div>
-  <p>A transcrição roda aqui no celular. Na primeira vez o app baixa o modelo de fala (uns 80 MB no modo rápido), depois fica guardado.</p>
+  <p>A transcrição roda aqui no celular. Na primeira vez o app baixa o modelo de fala (uns 80 MB no modo normal), depois fica guardado.</p>
   <div class="row">
     <label>Qualidade
       <select id="asrModel">
-        <option value="Xenova/whisper-base">Rápido</option>
-        <option value="Xenova/whisper-small">Preciso (mais lento, ~250 MB)</option>
+        <option value="Xenova/whisper-base">Normal (~80 MB)</option>
+        <option value="Xenova/whisper-tiny">Leve, para celular mais fraco (~40 MB)</option>
+        <option value="Xenova/whisper-small">Preciso, só celular forte (~250 MB)</option>
       </select>
     </label>
   </div>
@@ -336,11 +337,12 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.se
 const WORKER_SRC = `
 import { pipeline, env } from '${TJS}';
 env.allowLocalModels = false;
+env.backends.onnx.wasm.numThreads = 1;
 let asr = null, key = '';
 async function load(model, device){
   if (asr && key === model+device) return asr;
   const opts = { device, progress_callback: p => { if (p.status === 'progress') postMessage({ type:'dl', file:p.file, loaded:p.loaded, total:p.total }); } };
-  opts.dtype = device === 'webgpu' ? { encoder_model:'fp32', decoder_model_merged:'q4' } : 'q8';
+  opts.dtype = 'q8';
   asr = await pipeline('automatic-speech-recognition', model, opts); key = model+device; return asr;
 }
 onmessage = async (e) => {
@@ -350,7 +352,7 @@ onmessage = async (e) => {
     try { p = await load(model, device); }
     catch (err) { if (device !== 'wasm') { postMessage({ type:'info', msg:'Placa de vídeo indisponível, usando o processador.' }); p = await load(model, 'wasm'); } else throw err; }
     postMessage({ type:'stage' });
-    const opts = { language:'portuguese', task:'transcribe', chunk_length_s:30, stride_length_s:5, return_timestamps:true };
+    const opts = { language:'portuguese', task:'transcribe', chunk_length_s:20, stride_length_s:3, return_timestamps:true, batch_size:1 };
     let out;
     try { out = await p(audio, opts); }
     catch (err) { if (device === 'wasm') throw err; postMessage({ type:'info', msg:'Refazendo no processador…' }); out = await (await load(model, 'wasm'))(audio, opts); }
@@ -366,7 +368,8 @@ async function decodeAudio(file){
   const Ctx = window.AudioContext || window.webkitAudioContext;
   const ctx = new Ctx({ sampleRate:16000 });
   try{
-    const ab = await ctx.decodeAudioData(await file.arrayBuffer());
+    let raw = await file.arrayBuffer();
+    const ab = await ctx.decodeAudioData(raw); raw = null;
     if (ab.numberOfChannels < 2) return ab.getChannelData(0).slice();
     const a = ab.getChannelData(0), b = ab.getChannelData(1), out = new Float32Array(a.length);
     for (let i=0;i<a.length;i++) out[i] = (a[i]+b[i])/2;
@@ -394,7 +397,7 @@ function transcribe(file, barId, msgId){
       else if (d.type==='done'){ stop(); setBar(barId, null); resolve(d); }
       else if (d.type==='error'){ stop(); setBar(barId, null); reject(new Error('A transcrição falhou: ' + d.msg)); }
     };
-    const device = ('gpu' in navigator) ? 'webgpu' : 'wasm';
+    const device = 'wasm';
     const secs = audio.length / 16000;
     w.postMessage({ audio, model: $('#asrModel').value, device }, [audio.buffer]);
     audio = { length: secs * 16000 };
@@ -569,7 +572,7 @@ function refreshBg(){
   paintTheme(bgCache.getContext('2d'), S.bg, OUT_W, OUT_H);
   $('#colorWrap').hidden = S.bg !== 'cor'; $('#imgWrap').hidden = S.bg !== 'imagem';
   document.querySelectorAll('.theme').forEach(t => t.setAttribute('aria-pressed', t.dataset.id === S.bg));
-  if (needsSeg()) getSegmenter().catch(()=>{});
+  if (needsSeg() && S.userPickedBg) getSegmenter().catch(()=>{});
   if (!S.playing && !S.exporting) renderFrame();
 }
 (function buildThemes(){
@@ -578,7 +581,7 @@ function refreshBg(){
     const b = document.createElement('button'); b.className = 'theme'; b.dataset.id = t.id; b.type = 'button';
     const c = document.createElement('canvas'); c.width = 90; c.height = 120; paintTheme(c.getContext('2d'), t.id, 90, 120);
     const s = document.createElement('span'); s.textContent = t.name;
-    b.append(c, s); b.addEventListener('click', () => { S.bg = t.id; store.set('bg', t.id); refreshBg(); });
+    b.append(c, s); b.addEventListener('click', () => { S.bg = t.id; S.userPickedBg = true; store.set('bg', t.id); refreshBg(); });
     box.append(b);
   });
 })();
