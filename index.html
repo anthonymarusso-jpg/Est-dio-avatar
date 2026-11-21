@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#040a14">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Exo+2:wght@600;800&family=IBM+Plex+Mono:wght@500&family=Montserrat:wght@900&display=swap">
@@ -110,6 +110,18 @@ details[open] summary{margin-bottom:10px}
 <section class="step" id="s1">
   <div class="step-h"><div class="num">1</div><h2>Vídeo do avatar</h2></div>
   <p>Escolha o vídeo do avatar gerado por IA, do jeito que ele saiu da outra ferramenta.</p>
+  <details id="ttBox">
+    <summary>Pegar um vídeo do TikTok</summary>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <p>No TikTok, toque em <b>Compartilhar</b> e escolha o <b>Estúdio Avatar</b> (Android, com o app na tela inicial). Ou cole o link aqui.</p>
+      <label>Link do vídeo
+        <input id="ttLink" type="text" inputmode="url" placeholder="https://www.tiktok.com/@…/video/…" autocomplete="off">
+      </label>
+      <a class="btn primary" id="btnSnap" href="https://snaptik.app/pt" target="_blank" rel="noopener">Copiar link e abrir o baixador</a>
+      <div class="msg" id="ttMsg"></div>
+      <p>Depois de baixar, volte aqui e escolha o vídeo da galeria acima.</p>
+    </div>
+  </details>
   <div class="file"><b>Toque para escolher o vídeo</b><br><span id="srcName">MP4 ou MOV da galeria</span><input id="srcInput" type="file" accept="video/*"></div>
   <video id="srcVideo" class="thumb" controls playsinline hidden></video>
 </section>
@@ -301,6 +313,24 @@ $('#srcInput').addEventListener('change', e => {
   markDone(1);
   if (!S.finalFile) { loadWorkVideo(f); clearCaptions(); }
 });
+
+/* ---------- link do TikTok (compartilhado ou colado) ---------- */
+function findTikTok(str){ const m = (str || '').match(/https?:\/\/[^\s]*tiktok\.com[^\s]*/i); return m ? m[0] : ''; }
+(function receiveShare(){
+  const q = new URLSearchParams(location.search);
+  const link = findTikTok([q.get('url'), q.get('text'), q.get('title')].join(' '));
+  if (!link) return;
+  $('#ttLink').value = link; $('#ttBox').open = true;
+  setMsg('#ttMsg','Link recebido do TikTok. Toque no botão para baixar.','ok');
+  history.replaceState(null, '', location.pathname);
+})();
+$('#btnSnap').addEventListener('click', async () => {
+  const link = findTikTok($('#ttLink').value) || $('#ttLink').value.trim();
+  if (!link) return;
+  try { await navigator.clipboard.writeText(link); setMsg('#ttMsg','Link copiado. No site que abriu, cole o link e baixe o vídeo.','ok'); }
+  catch { setMsg('#ttMsg','Copie o link acima e cole no site que abriu.'); }
+});
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 /* ---------- transcrição (Whisper no aparelho) ---------- */
 const WORKER_SRC = `
