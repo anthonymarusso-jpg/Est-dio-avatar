@@ -129,9 +129,25 @@ details[open] summary{margin-bottom:10px}
 <!-- 2 -->
 <section class="step" id="s2">
   <div class="step-h"><div class="num">2</div><h2>Transcrever o áudio</h2></div>
-  <p>A transcrição roda aqui no celular. Na primeira vez o app baixa o modelo de fala (uns 40 MB no modo leve), depois fica guardado.</p>
+  <p>O Gemini transcreve pela internet, rápido e sem pesar o celular. Também dá para transcrever no próprio aparelho, sem internet, mas é mais lento.</p>
+  <details id="gemKeyBox">
+    <summary>Chave grátis do Gemini</summary>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <p>Entre no <b>Google AI Studio</b> com a sua conta Google, toque em <b>Create API key</b> e cole a chave aqui. É grátis. Ela fica salva só neste celular. No plano grátis, o Google pode usar o que você envia para melhorar os produtos dele.</p>
+      <a class="btn" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Abrir o Google AI Studio</a>
+      <label>Chave do Gemini
+        <input id="gemKey" type="password" placeholder="Cole a chave aqui" autocomplete="off">
+      </label>
+    </div>
+  </details>
   <div class="row">
-    <label>Qualidade
+    <label>Como transcrever
+      <select id="asrEngine">
+        <option value="gemini">Gemini (rápido)</option>
+        <option value="local">No próprio celular</option>
+      </select>
+    </label>
+    <label id="asrModelWrap">Qualidade
       <select id="asrModel">
         <option value="Xenova/whisper-tiny">Leve (~40 MB), recomendado no celular</option>
         <option value="Xenova/whisper-base">Normal (~80 MB), precisa de mais memória</option>
@@ -142,10 +158,7 @@ details[open] summary{margin-bottom:10px}
   <button class="btn primary" id="btnTranscribe" disabled>Transcrever</button>
   <div class="bar" id="asrBar" hidden><i></i></div>
   <div class="msg" id="asrMsg"></div>
-  <div id="geminiBox" hidden style="display:flex;flex-direction:column;gap:8px">
-    <p>Se o celular continuar fechando a página, faça a transcrição no Gemini: o botão copia o pedido, você anexa o vídeo lá e cola o texto aqui embaixo.</p>
-    <a class="btn" id="btnGemini" href="https://gemini.google.com/app" target="_blank" rel="noopener">Transcrever no Gemini</a>
-  </div>
+
   <label>Texto do vídeo
     <textarea id="transcript" placeholder="A transcrição aparece aqui. Você pode corrigir à vontade."></textarea>
   </label>
@@ -153,10 +166,11 @@ details[open] summary{margin-bottom:10px}
 
 <!-- 3 -->
 <section class="step" id="s3">
-  <div class="step-h"><div class="num">3</div><h2>Reescrever com o Claude</h2><span class="tag manual">no chat</span></div>
-  <p>O botão abre o Claude com o texto e o pedido já escritos. Envie, copie a resposta e cole aqui embaixo.</p>
+  <div class="step-h"><div class="num">3</div><h2>Reescrever o texto</h2></div>
+  <p>O Gemini reescreve aqui mesmo, com o mesmo sentido e outras palavras. Se preferir o Claude, o outro botão abre o chat com o pedido pronto.</p>
+  <button class="btn primary" id="btnGemRewrite">Reescrever aqui com o Gemini</button>
   <div class="row">
-    <a class="btn primary" id="btnClaude" href="https://claude.ai/new" target="_blank" rel="noopener">Abrir no Claude</a>
+    <a class="btn" id="btnClaude" href="https://claude.ai/new" target="_blank" rel="noopener">Abrir no Claude</a>
     <button class="btn" id="btnCopyPrompt">Copiar pedido</button>
   </div>
   <div class="msg" id="claudeMsg"></div>
@@ -295,8 +309,8 @@ function bindSaved(id, key, ev='input'){
   if (v != null){ if (el.type==='checkbox') el.checked = v; else el.value = v; }
   el.addEventListener(ev, () => store.set(key, el.type==='checkbox' ? el.checked : el.value));
 }
-['#fishKey:fishKey','#voiceId:voiceId','#fishModel:fishModel','#speed:speed','#asrModel:asrModel2','#transcript:transcript','#rewritten:rewritten','#postText:postText','#capWords:capWords','#capColor:capColor','#capPos:capPos','#capSize:capSize','#capUpper:capUpper','#scale:scale','#offsetY:offsetY','#bgColor:bgColor']
-  .forEach(p => { const [id,k] = p.split(':'); bindSaved(id, k, (id==='#capUpper'||id.includes('Model')||id==='#capWords'||id==='#capColor') ? 'change' : 'input'); });
+['#gemKey:gemKey','#asrEngine:asrEngine','#fishKey:fishKey','#voiceId:voiceId','#fishModel:fishModel','#speed:speed','#asrModel:asrModel2','#transcript:transcript','#rewritten:rewritten','#postText:postText','#capWords:capWords','#capColor:capColor','#capPos:capPos','#capSize:capSize','#capUpper:capUpper','#scale:scale','#offsetY:offsetY','#bgColor:bgColor']
+  .forEach(p => { const [id,k] = p.split(':'); bindSaved(id, k, (id==='#capUpper'||id==='#asrEngine'||id.includes('Model')||id==='#capWords'||id==='#capColor') ? 'change' : 'input'); });
 
 const S = {
   srcFile:null, finalFile:null, ttsBlob:null,
@@ -408,22 +422,96 @@ function transcribe(file, barId, msgId){
     audio = { length: secs * 16000 };
   });
 }
-$('#btnGemini').addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText('Transcreva palavra por palavra a fala do vídeo anexado, em português do Brasil. Responda só com o texto falado, sem comentários.'); setMsg('#asrMsg','Pedido copiado. No Gemini, anexe o vídeo, cole o pedido e envie.','ok'); } catch {}
+/* ---------- Gemini (chave grátis do Google AI Studio) ---------- */
+const GEM_MODELS = ['gemini-3.5-flash', 'gemini-3.1-flash-lite'];
+async function gemini(parts, json){
+  const key = $('#gemKey').value.trim();
+  if (!key){ $('#gemKeyBox').open = true; throw new Error('Coloque a chave grátis do Gemini no passo 2.'); }
+  let last = null;
+  for (const m of GEM_MODELS){
+    let res;
+    try {
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
+        method:'POST', headers:{ 'Content-Type':'application/json', 'x-goog-api-key':key },
+        body: JSON.stringify({ contents:[{ role:'user', parts }], generationConfig: json ? { responseMimeType:'application/json', temperature:0 } : { temperature:0.8 } })
+      });
+    } catch { throw new Error('Sem conexão com o Gemini. Confira a internet.'); }
+    if (res.ok){
+      const j = await res.json();
+      const t = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('').trim();
+      if (!t) throw new Error('O Gemini não devolveu texto. Tente de novo.');
+      return t;
+    }
+    let msg = ''; try { msg = (await res.json()).error?.message || ''; } catch {}
+    if (res.status === 400 && /api key/i.test(msg)) throw new Error('Chave do Gemini inválida. Confira e cole de novo.');
+    if (res.status === 403) throw new Error('Essa chave do Gemini não tem permissão. Gere outra no Google AI Studio.');
+    last = new Error(res.status === 429 ? 'O limite grátis do Gemini acabou por agora. Espere um minuto e tente de novo.' : `O Gemini respondeu erro ${res.status}. ${msg}`);
+    if (res.status !== 404 && res.status !== 429 && res.status < 500) break;
+  }
+  throw last;
+}
+function wavBase64(f32, rate = 16000){
+  const n = f32.length, buf = new ArrayBuffer(44 + n*2), v = new DataView(buf);
+  const w = (o, str) => { for (let i=0;i<str.length;i++) v.setUint8(o+i, str.charCodeAt(i)); };
+  w(0,'RIFF'); v.setUint32(4, 36 + n*2, true); w(8,'WAVE'); w(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24, rate, true); v.setUint32(28, rate*2, true); v.setUint16(32,2,true); v.setUint16(34,16,true); w(36,'data'); v.setUint32(40, n*2, true);
+  for (let i=0;i<n;i++){ const x = Math.max(-1, Math.min(1, f32[i])); v.setInt16(44 + i*2, x < 0 ? x*0x8000 : x*0x7fff, true); }
+  const bytes = new Uint8Array(buf); let bin = '';
+  for (let i=0;i<bytes.length;i+=0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i+0x8000));
+  return btoa(bin);
+}
+async function transcribeGemini(file, barId, msgId){
+  setMsg(msgId, 'Lendo o áudio do vídeo…'); setBar(barId, 0.15);
+  let audio;
+  try { audio = await decodeAudio(file); }
+  catch { setBar(barId, null); throw new Error('Não consegui ler o áudio desse vídeo. Tente exportar de novo em MP4.'); }
+  const dur = audio.length / 16000;
+  if (dur > 540){ setBar(barId, null); throw new Error('O vídeo passa de 9 minutos. Use um vídeo mais curto.'); }
+  const prompt = `Transcreva palavra por palavra a fala deste áudio, em português do Brasil, com pontuação. Devolva só JSON neste formato: {"text": "texto completo", "segments": [{"start": 0.0, "end": 2.4, "text": "trecho"}]}. start e end são segundos (número decimal), cada trecho tem uma frase curta, em ordem. O áudio tem ${dur.toFixed(1)} segundos.`;
+  const t0 = Date.now(); setBar(barId, 0.5);
+  const timer = setInterval(() => setMsg(msgId, `Transcrevendo no Gemini… ${Math.floor((Date.now()-t0)/1000)}s`), 1000);
+  setMsg(msgId, 'Enviando para o Gemini…');
+  try {
+    const out = await gemini([{ inline_data:{ mime_type:'audio/wav', data: wavBase64(audio) } }, { text: prompt }], true);
+    let j; try { j = JSON.parse(out.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim()); } catch { j = { text: out, segments: [] }; }
+    let chunks = (Array.isArray(j.segments) ? j.segments : []).filter(x => x && x.text)
+      .map(x => ({ timestamp:[Math.max(0, Number(x.start) || 0), Math.min(dur, Number(x.end) || 0)], text: ' ' + String(x.text).trim() }));
+    const text = (j.text || chunks.map(c => c.text).join('')).trim();
+    if (!chunks.length || chunks.some(c => !(c.timestamp[1] > c.timestamp[0]))) chunks = [{ timestamp:[0, dur], text: ' ' + text }];
+    return { text, chunks };
+  } finally { clearInterval(timer); setBar(barId, null); }
+}
+function runTranscribe(file, barId, msgId){
+  return $('#asrEngine').value === 'gemini' ? transcribeGemini(file, barId, msgId) : transcribe(file, barId, msgId);
+}
+function syncEngine(){
+  const g = $('#asrEngine').value === 'gemini';
+  $('#asrModelWrap').hidden = g;
+  if (g && !$('#gemKey').value.trim()) $('#gemKeyBox').open = true;
+}
+$('#asrEngine').addEventListener('change', syncEngine); syncEngine();
+$('#btnGemRewrite').addEventListener('click', async () => {
+  if (!$('#transcript').value.trim()) return setMsg('#claudeMsg','Faça a transcrição do passo 2 primeiro.','err');
+  const b = $('#btnGemRewrite'); b.disabled = true; setMsg('#claudeMsg','Reescrevendo no Gemini…');
+  try {
+    const out = await gemini([{ text: promptText() }], false);
+    $('#rewritten').value = out.replace(/^["“]|["”]$/g, '').trim(); store.set('rewritten', $('#rewritten').value);
+    setMsg('#claudeMsg','Pronto. Leia e ajuste o que quiser.','ok'); markDone(3);
+  } catch (e) { setMsg('#claudeMsg', e.message, 'err'); }
+  b.disabled = false;
 });
 /* se a página caiu durante a transcrição, na próxima abertura o app avisa e troca para o modo leve */
 (function crashCheck(){
   const was = store.get('asrRunning', null);
   if (!was) return;
   store.set('asrRunning', null);
-  $('#geminiBox').hidden = false;
-  if (was !== 'Xenova/whisper-tiny'){ $('#asrModel').value = 'Xenova/whisper-tiny'; store.set('asrModel2', 'Xenova/whisper-tiny'); setMsg('#asrMsg','Da última vez o celular ficou sem memória. Troquei para o modo Leve, tente de novo.','err'); }
-  else setMsg('#asrMsg','Da última vez o celular ficou sem memória, mesmo no modo Leve. Feche os outros apps e tente de novo, ou use o Gemini.','err');
+  $('#asrEngine').value = 'gemini'; store.set('asrEngine', 'gemini'); syncEngine();
+  setMsg('#asrMsg','Da última vez o celular ficou sem memória transcrevendo no aparelho. Troquei para o Gemini, que não pesa o celular.','err');
 })();
 $('#btnTranscribe').addEventListener('click', async () => {
   const b = $('#btnTranscribe'); b.disabled = true;
   try{
-    const r = await transcribe(S.srcFile, '#asrBar', '#asrMsg');
+    const r = await runTranscribe(S.srcFile, '#asrBar', '#asrMsg');
     $('#transcript').value = r.text.trim(); store.set('transcript', r.text.trim());
     setMsg('#asrMsg', 'Pronto. Confira o texto antes de seguir.', 'ok'); markDone(2); updateClaudeLink();
   }catch(e){ setMsg('#asrMsg', e.message, 'err'); }
@@ -705,7 +793,7 @@ $('#btnCaps').addEventListener('click', async () => {
   const f = S.finalFile || S.srcFile; if (!f) return;
   const b = $('#btnCaps'); b.disabled = true;
   try{
-    const r = await transcribe(f, '#capBar', '#capMsg');
+    const r = await runTranscribe(f, '#capBar', '#capMsg');
     S.chunks = r.chunks; store.set('chunks', S.chunks);
     S.captions = buildCaptions(S.chunks, vid.duration, Number($('#capWords').value)); store.set('captions', S.captions);
     renderCapList(); renderFrame();
