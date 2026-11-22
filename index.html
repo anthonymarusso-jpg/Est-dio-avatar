@@ -257,11 +257,25 @@ details[open] summary{margin-bottom:10px}
 
 <!-- 5 -->
 <section class="step" id="s5">
-  <div class="step-h"><div class="num">5</div><h2>Animar a boca</h2><span class="tag">DreamAPI</span></div>
-  <p>A DreamAPI (do DreamFace) junta o vídeo do passo 1 com a voz nova e sincroniza a boca. Custa cerca de <b>US$ 0,0075 por segundo</b> de vídeo, cobrado do saldo da sua conta DreamAPI. <span id="dreamCost"></span></p>
+  <div class="step-h"><div class="num">5</div><h2>Animar a boca</h2></div>
   <div class="file"><b>Áudio da voz</b><br><span id="dreamAudioName">Usa a voz gerada no passo 4. Se gerou no site do Fish Audio, toque para escolher o arquivo.</span><input id="dreamAudio" type="file" accept="audio/*"></div>
-  <label style="flex-direction:row;align-items:flex-start;gap:8px;font-weight:400"><input id="dreamOk" type="checkbox" style="margin-top:3px"> Confirmo que o vídeo é de um avatar criado por IA, e não de uma pessoa real.</label>
-  <button class="btn primary" id="btnDream">Sincronizar a boca</button>
+  <label style="flex-direction:row;align-items:flex-start;gap:8px;font-weight:400"><input id="dreamOk" type="checkbox" style="margin-top:3px"> Confirmo que o rosto é de um avatar criado por IA, e não de uma pessoa real.</label>
+
+  <h3 style="margin:6px 0 0;font:800 15px var(--f-head)">Boca falante (grátis, no aparelho)</h3>
+  <p>O app pega o rosto do avatar e mexe a boca e o queixo no ritmo da voz. É mais simples que o DreamFace, mas não custa nada. Funciona melhor com o avatar de frente e de boca fechada.</p>
+  <div class="file"><b>Foto do avatar (opcional)</b><br><span id="talkPhotoName">Sem foto, o app usa um quadro do vídeo do passo 1</span><input id="talkPhoto" type="file" accept="image/*"></div>
+  <label>Abertura da boca <input id="talkStrength" type="range" min="0.4" max="1.6" step="0.05" value="1"></label>
+  <div class="row">
+    <button class="btn" id="btnTalkPreview">Testar rosto</button>
+    <button class="btn primary" id="btnTalk">Animar no app</button>
+  </div>
+  <div class="bar" id="talkBar" hidden><i></i></div>
+  <div class="msg" id="talkMsg"></div>
+  <div class="stage"><canvas id="talkCanvas" width="360" height="640" hidden style="width:min(100%,320px);height:auto;border-radius:12px;background:#000"></canvas></div>
+
+  <h3 style="margin:10px 0 0;font:800 15px var(--f-head)">DreamAPI (pago, mais realista)</h3>
+  <p>A DreamAPI (do DreamFace) junta o vídeo do passo 1 com a voz nova e sincroniza a boca. Custa cerca de <b>US$ 0,0075 por segundo</b> de vídeo, cobrado do saldo da sua conta DreamAPI. <span id="dreamCost"></span></p>
+  <button class="btn" id="btnDream">Sincronizar pela DreamAPI</button>
   <div class="bar" id="dreamBar" hidden><i></i></div>
   <div class="msg" id="dreamMsg"></div>
   <video id="dreamResult" class="thumb" controls playsinline hidden></video>
@@ -297,6 +311,16 @@ details[open] summary{margin-bottom:10px}
     <button class="btn" id="btnPlay" disabled>▶ Prévia</button>
   </div>
   <div class="msg" id="segMsg"></div>
+  <details id="photoCutBox">
+    <summary>Tirar o fundo de uma foto</summary>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <p>Deixa só as pessoas e entrega um PNG sem fundo, para usar onde quiser.</p>
+      <div class="file"><b>Escolher foto</b><br><span id="cutName">JPG ou PNG da galeria</span><input id="cutInput" type="file" accept="image/*"></div>
+      <div class="msg" id="cutMsg"></div>
+      <div class="stage"><canvas id="cutCanvas" hidden style="max-width:100%;width:320px;height:auto;border-radius:12px;background:repeating-conic-gradient(#2a3440 0 25%,#1a2129 0 50%) 0 0/20px 20px"></canvas></div>
+      <a class="btn primary" id="cutDownload" download="foto-sem-fundo.png" hidden>Baixar PNG sem fundo</a>
+    </div>
+  </details>
 </section>
 
 <!-- 7 -->
@@ -350,6 +374,8 @@ const OUT_W = 720, OUT_H = 1280;
 const TJS = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2';
 const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
 const SEG_MODEL = 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite';
+const MULTI_MODEL = 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite';
+const FACE_MODEL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
 
 /* ---------- memória local ---------- */
 const store = {
@@ -726,9 +752,218 @@ if (store.get('voiceName', '')) setMsg('#voiceMsg', 'Voz escolhida: ' + store.ge
 /* ---------- 5. DreamFace ---------- */
 $('#btnDreamDone').addEventListener('click', () => { markDone(5); $('#s6').scrollIntoView({behavior:'smooth'}); });
 
+/* ---------- 5a. Boca falante (grátis, no aparelho) ---------- */
+let faceLm = null, talkPhotoFile = null, talkBase = null, talkMesh = null, dreamAudioFile = null;
+const UPPER_IN = [78,191,80,81,82,13,312,311,310,415,308], LOWER_IN = [95,88,178,87,14,317,402,318,324];
+$('#talkPhoto').addEventListener('change', e => { const f = e.target.files[0]; if (!f) return; talkPhotoFile = f; talkBase = null; $('#talkPhotoName').textContent = f.name; });
+$('#srcInput').addEventListener('change', () => { if (!talkPhotoFile) talkBase = null; });
+async function getFaceLandmarker(){
+  if (faceLm) return faceLm;
+  const { FaceLandmarker, FilesetResolver } = await import(MP);
+  const fs = await FilesetResolver.forVisionTasks(MP + '/wasm');
+  const make = d => FaceLandmarker.createFromOptions(fs, { baseOptions:{ modelAssetPath: FACE_MODEL, delegate: d }, runningMode:'IMAGE', numFaces: 1 });
+  try { faceLm = await make('GPU'); } catch { faceLm = await make('CPU'); }
+  return faceLm;
+}
+function loadImage(file){ return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Não consegui abrir essa imagem.')); i.src = URL.createObjectURL(file); }); }
+function frameFromVideo(file){
+  return new Promise((res, rej) => {
+    const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = URL.createObjectURL(file);
+    v.onloadedmetadata = () => { v.currentTime = Math.min(0.6, (v.duration || 1) / 2); };
+    v.onseeked = () => res(v); v.onerror = () => rej(new Error('Não consegui ler o vídeo do passo 1.'));
+  });
+}
+async function getTalkBase(){
+  if (talkBase) return talkBase;
+  let src, w, h;
+  if (talkPhotoFile){ src = await loadImage(talkPhotoFile); w = src.naturalWidth; h = src.naturalHeight; }
+  else if (S.srcFile){ src = await frameFromVideo(S.srcFile); w = src.videoWidth; h = src.videoHeight; }
+  else throw new Error('Escolha o vídeo no passo 1 ou uma foto do avatar.');
+  const sc = Math.min(1, 1280 / Math.max(w, h)), W = Math.round(w * sc / 2) * 2, H = Math.round(h * sc / 2) * 2;
+  const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').drawImage(src, 0, 0, W, H);
+  const lmk = await getFaceLandmarker();
+  const r = lmk.detect(c);
+  const lm = r.faceLandmarks && r.faceLandmarks[0];
+  if (!lm) throw new Error('Não achei um rosto. Use uma foto do avatar de frente, bem iluminada.');
+  talkBase = c; talkMesh = buildMesh(lm, W, H);
+  return talkBase;
+}
+function buildMesh(lm, W, H){
+  const P = i => [lm[i].x * W, lm[i].y * H];
+  const up = P(13), lo = P(14), L = P(61), R = P(291), chin = P(152), nose = P(1);
+  const mw = Math.hypot(R[0] - L[0], R[1] - L[1]);
+  const m = { mx:(up[0] + lo[0]) / 2, my:(up[1] + lo[1]) / 2, mw, chinY: chin[1] };
+  m.x0 = Math.max(0, m.mx - 2.0 * mw); m.x1 = Math.min(W, m.mx + 2.0 * mw);
+  m.y0 = Math.max(0, nose[1] - 0.2 * mw); m.y1 = Math.min(H, chin[1] + 1.0 * mw);
+  m.upper = UPPER_IN.map(P); m.lower = LOWER_IN.map(P);
+  const G = 18; m.cols = G; m.rows = G; m.grid = [];
+  for (let j = 0; j <= G; j++) for (let i = 0; i <= G; i++) m.grid.push([m.x0 + (m.x1 - m.x0) * i / G, m.y0 + (m.y1 - m.y0) * j / G]);
+  return m;
+}
+const smooth = t => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
+function displace(x, y, m, open){
+  const A = open * m.mw * 0.36 * Number($('#talkStrength').value);
+  const hx = Math.exp(-((x - m.mx) ** 2) / (2 * (m.mw * 0.7) ** 2));
+  const edge = Math.min(x - m.x0, m.x1 - x, y - m.y0, m.y1 - y) / (0.18 * Math.min(m.x1 - m.x0, m.y1 - m.y0));
+  const taper = smooth(edge);
+  let dy = 0;
+  if (y >= m.my){
+    const t1 = smooth((y - m.my) / (m.mw * 0.06) + 0.5);
+    const below = y - m.chinY, t2 = below <= 0 ? 1 : Math.max(0, 1 - below / (m.mw * 0.7));
+    dy = A * t1 * t2;
+  } else {
+    const d = (m.my - y) / (m.mw * 0.3); if (d < 1) dy = -A * 0.12 * (1 - d);
+  }
+  return [x, y + dy * hx * taper];
+}
+function drawTri(ctx, img, s0, s1, s2, d0, d1, d2){
+  const cx = (d0[0] + d1[0] + d2[0]) / 3, cy = (d0[1] + d1[1] + d2[1]) / 3, g = p => [p[0] + (p[0] - cx) * 0.04, p[1] + (p[1] - cy) * 0.04];
+  const e0 = g(d0), e1 = g(d1), e2 = g(d2);
+  ctx.save(); ctx.beginPath(); ctx.moveTo(e0[0], e0[1]); ctx.lineTo(e1[0], e1[1]); ctx.lineTo(e2[0], e2[1]); ctx.closePath(); ctx.clip();
+  const [x0, y0] = s0, [x1, y1] = s1, [x2, y2] = s2, [u0, v0] = d0, [u1, v1] = d1, [u2, v2] = d2;
+  const den = (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0);
+  if (Math.abs(den) < 1e-6){ ctx.restore(); return; }
+  const a = ((u1 - u0) * (y2 - y0) - (u2 - u0) * (y1 - y0)) / den, b = ((u2 - u0) * (x1 - x0) - (u1 - u0) * (x2 - x0)) / den;
+  const c = ((v1 - v0) * (y2 - y0) - (v2 - v0) * (y1 - y0)) / den, d = ((v2 - v0) * (x1 - x0) - (v1 - v0) * (x2 - x0)) / den;
+  ctx.setTransform(a, c, b, d, u0 - a * x0 - b * y0, v0 - c * x0 - d * y0);
+  ctx.drawImage(img, 0, 0); ctx.restore();
+}
+function drawTalkFrame(ctx, open){
+  const img = talkBase, m = talkMesh;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(img, 0, 0);
+  if (open < 0.02) return;
+  const dst = m.grid.map(p => displace(p[0], p[1], m, open)), C = m.cols + 1;
+  for (let j = 0; j < m.rows; j++) for (let i = 0; i < m.cols; i++){
+    const a = j * C + i, b = a + 1, c = a + C, d = c + 1;
+    drawTri(ctx, img, m.grid[a], m.grid[b], m.grid[c], dst[a], dst[b], dst[c]);
+    drawTri(ctx, img, m.grid[b], m.grid[d], m.grid[c], dst[b], dst[d], dst[c]);
+  }
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const up = m.upper.map(p => displace(p[0], p[1], m, open)), lo = m.lower.map(p => displace(p[0], p[1], m, open));
+  const gap = Math.max(...lo.map(p => p[1])) - Math.min(...up.map(p => p[1]));
+  if (gap < 2) return;
+  ctx.save(); ctx.beginPath(); ctx.moveTo(up[0][0], up[0][1]);
+  up.forEach(p => ctx.lineTo(p[0], p[1])); lo.slice().reverse().forEach(p => ctx.lineTo(p[0], p[1])); ctx.closePath();
+  const grd = ctx.createRadialGradient(m.mx, m.my + gap * 0.3, 1, m.mx, m.my + gap * 0.3, m.mw * 0.6);
+  grd.addColorStop(0, '#3a0f12'); grd.addColorStop(1, '#140405'); ctx.fillStyle = grd; ctx.fill(); ctx.clip();
+  const topY = Math.min(...up.map(p => p[1]));
+  ctx.fillStyle = 'rgba(236,230,220,.92)'; ctx.fillRect(m.mx - m.mw * 0.32, topY - 2, m.mw * 0.64, Math.min(gap * 0.28, m.mw * 0.1) + 2);
+  ctx.fillStyle = 'rgba(150,60,70,.55)'; ctx.beginPath(); ctx.ellipse(m.mx, topY + gap * 0.95, m.mw * 0.22, gap * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+async function voiceEnvelope(file, fps){
+  const Ctx = window.AudioContext || window.webkitAudioContext, ctx = new Ctx();
+  try {
+    const ab = await ctx.decodeAudioData(await file.arrayBuffer());
+    const ch = ab.getChannelData(0), hop = Math.round(ab.sampleRate / fps), n = Math.ceil(ch.length / hop), e = new Float32Array(n);
+    for (let i = 0; i < n; i++){ let s = 0, k = 0; for (let j = i * hop; j < Math.min(ch.length, i * hop + hop * 1.5); j++){ s += ch[j] * ch[j]; k++; } e[i] = Math.sqrt(s / Math.max(1, k)); }
+    const sorted = Array.from(e).sort((a, b) => a - b), p95 = sorted[Math.floor(n * 0.95)] || 1e-6, gate = p95 * 0.15;
+    const open = new Float32Array(n); let prev = 0;
+    for (let i = 0; i < n; i++){
+      const t = Math.min(1, Math.max(0, (e[i] - gate) / (p95 - gate))) ** 0.75;
+      prev += (t - prev) * (t > prev ? 0.65 : 0.35); open[i] = prev;
+    }
+    return { open, buffer: ab };
+  } finally { ctx.close?.(); }
+}
+function talkAudioFile(){ return dreamAudioFile || (S.ttsBlob ? new File([S.ttsBlob], 'voz.mp3', { type:'audio/mpeg' }) : null); }
+$('#btnTalkPreview').addEventListener('click', async () => {
+  const b = $('#btnTalkPreview'); b.disabled = true; setMsg('#talkMsg', 'Procurando o rosto…');
+  try {
+    await getTalkBase();
+    const cv = $('#talkCanvas'); cv.width = talkBase.width; cv.height = talkBase.height; cv.hidden = false;
+    const ctx = cv.getContext('2d'), t0 = performance.now();
+    setMsg('#talkMsg', 'Rosto encontrado. Veja a boca abrindo e fechando.', 'ok');
+    const anim = () => { const t = (performance.now() - t0) / 1000; if (t > 3){ drawTalkFrame(ctx, 0); return; } drawTalkFrame(ctx, Math.abs(Math.sin(t * 5)) * 0.9); requestAnimationFrame(anim); };
+    anim();
+  } catch (e) { setMsg('#talkMsg', e.message, 'err'); }
+  b.disabled = false;
+});
+$('#btnTalk').addEventListener('click', async () => {
+  const audioFile = talkAudioFile();
+  if (!audioFile) return setMsg('#talkMsg', 'Gere a voz no passo 4 ou escolha o arquivo de áudio acima.', 'err');
+  if (!$('#dreamOk').checked) return setMsg('#talkMsg', 'Marque a confirmação de que o rosto é de um avatar criado por IA.', 'err');
+  if (!window.MediaRecorder) return setMsg('#talkMsg', 'Este navegador não grava vídeo. Use o Chrome ou o Edge.', 'err');
+  const b = $('#btnTalk'); b.disabled = true; setBar('#talkBar', 0.02);
+  const Ctx = window.AudioContext || window.webkitAudioContext, ac = new Ctx();
+  let lock = null;
+  try {
+    setMsg('#talkMsg', 'Preparando o rosto e a voz…');
+    await getTalkBase();
+    const FPS = 30, env = await voiceEnvelope(audioFile, FPS);
+    const cv = $('#talkCanvas'); cv.width = talkBase.width; cv.height = talkBase.height; cv.hidden = false;
+    const ctx = cv.getContext('2d'); drawTalkFrame(ctx, 0);
+    try { lock = await navigator.wakeLock?.request('screen'); } catch {}
+    const dest = ac.createMediaStreamDestination(), srcNode = ac.createBufferSource();
+    srcNode.buffer = await ac.decodeAudioData(await audioFile.arrayBuffer()); srcNode.connect(dest);
+    const mime = pickMime();
+    const rec = new MediaRecorder(new MediaStream([...cv.captureStream(FPS).getVideoTracks(), ...dest.stream.getAudioTracks()]), mime ? { mimeType: mime, videoBitsPerSecond: 6_000_000 } : undefined);
+    const parts = []; rec.ondataavailable = e => { if (e.data.size) parts.push(e.data); };
+    const stopped = new Promise(r => rec.onstop = r);
+    const dur = srcNode.buffer.duration;
+    rec.start(500); const t0 = ac.currentTime + 0.05; srcNode.start(t0);
+    setMsg('#talkMsg', 'Gravando a boca falante… não saia do app.');
+    await new Promise(resolve => {
+      const tick = () => {
+        const t = ac.currentTime - t0;
+        if (t >= dur + 0.15) return resolve();
+        const i = Math.max(0, Math.min(env.open.length - 1, Math.floor(t * FPS)));
+        drawTalkFrame(ctx, t < 0 ? 0 : env.open[i]);
+        setBar('#talkBar', Math.max(0, t) / dur);
+        $('#talkMsg').textContent = `Gravando a boca falante… ${Math.round(Math.max(0, t) / dur * 100)}%. Não saia do app.`;
+        requestAnimationFrame(tick);
+      };
+      tick();
+    });
+    drawTalkFrame(ctx, 0); await new Promise(r => setTimeout(r, 250)); rec.stop(); await stopped;
+    const type = rec.mimeType || mime || 'video/webm', ext = type.includes('mp4') ? 'mp4' : 'webm';
+    const f = new File([new Blob(parts, { type })], 'avatar-falando.' + ext, { type: type.split(';')[0] });
+    S.finalFile = f; $('#finalName').textContent = 'Boca falante feita no app'; loadWorkVideo(f); clearCaptions();
+    const d = $('#dreamDownload'); d.href = URL.createObjectURL(f); d.removeAttribute('target'); d.download = f.name; d.hidden = false;
+    markDone(5); markDone(6);
+    setMsg('#talkMsg', 'Pronto! O vídeo do avatar falando já está no passo 6.', 'ok');
+  } catch (e) { setMsg('#talkMsg', e.message || String(e), 'err'); }
+  try { await lock?.release(); } catch {}
+  ac.close?.(); setBar('#talkBar', null); b.disabled = false;
+});
+
+/* ---------- 6b. tirar o fundo de uma foto ---------- */
+let photoSeg = null;
+async function getPhotoSeg(){
+  if (photoSeg) return photoSeg;
+  const { ImageSegmenter, FilesetResolver } = await import(MP);
+  const fs = await FilesetResolver.forVisionTasks(MP + '/wasm');
+  const make = d => ImageSegmenter.createFromOptions(fs, { baseOptions:{ modelAssetPath: MULTI_MODEL, delegate: d }, runningMode:'IMAGE', outputCategoryMask:false, outputConfidenceMasks:true });
+  try { photoSeg = await make('GPU'); } catch { photoSeg = await make('CPU'); }
+  return photoSeg;
+}
+$('#cutInput').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  $('#cutName').textContent = f.name; setMsg('#cutMsg', 'Tirando o fundo…'); $('#cutDownload').hidden = true;
+  try {
+    const img = await loadImage(f);
+    const sc = Math.min(1, 2048 / Math.max(img.naturalWidth, img.naturalHeight));
+    const W = Math.round(img.naturalWidth * sc), H = Math.round(img.naturalHeight * sc);
+    const work = document.createElement('canvas'); work.width = W; work.height = H; work.getContext('2d').drawImage(img, 0, 0, W, H);
+    const seg = await getPhotoSeg(), r = seg.segment(work), masks = r.confidenceMasks || [];
+    if (!masks.length) throw new Error('Não consegui separar a pessoa do fundo.');
+    const m = masks[0], mw = m.width, mh = m.height, data = m.getAsFloat32Array(), inv = masks.length > 1;
+    const mc = document.createElement('canvas'); mc.width = mw; mc.height = mh; const mctx2 = mc.getContext('2d'), id = mctx2.createImageData(mw, mh);
+    let people = 0;
+    for (let i = 0; i < mw * mh; i++){ let v = inv ? 1 - data[i] : data[i]; v = Math.min(1, Math.max(0, (v - 0.3) / 0.4)); id.data[i * 4 + 3] = v * 255; people += v; }
+    if (r.close) r.close(); else masks.forEach(x => x.close());
+    if (people < mw * mh * 0.005) throw new Error('Não achei nenhuma pessoa nessa foto.');
+    mctx2.putImageData(id, 0, 0);
+    const out = $('#cutCanvas'); out.width = W; out.height = H; out.hidden = false;
+    const o = out.getContext('2d'); o.clearRect(0, 0, W, H); o.drawImage(work, 0, 0);
+    o.globalCompositeOperation = 'destination-in'; o.imageSmoothingEnabled = true; o.imageSmoothingQuality = 'high'; o.drawImage(mc, 0, 0, W, H); o.globalCompositeOperation = 'source-over';
+    out.toBlob(bl => { const a = $('#cutDownload'); a.href = URL.createObjectURL(bl); a.download = f.name.replace(/\.[^.]+$/, '') + '-sem-fundo.png'; a.hidden = false; }, 'image/png');
+    setMsg('#cutMsg', 'Pronto. Só as pessoas ficaram.', 'ok');
+  } catch (err) { setMsg('#cutMsg', err.message || 'Não consegui tirar o fundo dessa foto.', 'err'); }
+});
+
 /* ---------- 5. DreamAPI: sincronizar a boca ---------- */
 const DREAM = 'https://api.newportai.com/api';
-let dreamAudioFile = null;
 $('#dreamAudio').addEventListener('change', e => { const f = e.target.files[0]; if (!f) return; dreamAudioFile = f; $('#dreamAudioName').textContent = f.name; });
 function dreamCostHint(){
   const d = $('#srcVideo').duration;
@@ -763,7 +998,7 @@ $('#btnDream').addEventListener('click', async () => {
   const audio = dreamAudioFile || (S.ttsBlob ? new File([S.ttsBlob], 'voz.mp3', { type:'audio/mpeg' }) : null);
   if (!S.srcFile) return setMsg('#dreamMsg','Escolha o vídeo do avatar no passo 1.','err');
   if (!audio) return setMsg('#dreamMsg','Gere a voz no passo 4 ou escolha o arquivo de áudio acima.','err');
-  if (!$('#dreamOk').checked) return setMsg('#dreamMsg','Marque a confirmação de que o vídeo é de um avatar criado por IA.','err');
+  if (!$('#dreamOk').checked) return setMsg('#dreamMsg','Marque a confirmação de que o rosto é de um avatar criado por IA.','err');
   if (!$('#dreamKey').value.trim()){ $('#dreamKeyBox').open = true; return setMsg('#dreamMsg','Coloque a chave da DreamAPI.','err'); }
   const b = $('#btnDream'); b.disabled = true; setBar('#dreamBar', 0.05);
   try {
