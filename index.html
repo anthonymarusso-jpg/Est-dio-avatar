@@ -563,11 +563,14 @@ $('#btnTTS').addEventListener('click', async () => {
   const voice = $('#voiceId').value.trim(); if (voice) body.reference_id = voice;
   try{
     let res;
-    res = await fetch('https://api.fish.audio/v1/tts', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+key, 'model':$('#fishModel').value }, body:JSON.stringify(body) });
+    const ttsUrl = 'https://api.fish.audio/v1/tts', payload = JSON.stringify(body);
+    /* o navegador pode barrar o cabeçalho "model"; se isso acontecer, tenta sem ele (o Fish usa o modelo padrão da conta) */
+    try { res = await fetch(ttsUrl, { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+key, 'model':$('#fishModel').value }, body:payload }); }
+    catch { res = await fetch(ttsUrl, { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+key }, body:payload }); }
     if (!res.ok){
       let m = ''; try{ const j = await res.json(); m = j.message || j.reason || ''; }catch{}
       if (res.status===401) throw new Error('Chave do Fish Audio recusada. Confira a chave.');
-      if (res.status===402) throw new Error('Sem créditos na API do Fish Audio. Troque o modelo para "S2.1 grátis".');
+      if (res.status===402) throw new Error('Sem créditos na API do Fish Audio para esse modelo. Coloque créditos em fish.audio/app/billing ou tente o modelo "S2.1 grátis".');
       throw new Error(`O Fish Audio respondeu erro ${res.status}. ${m}`);
     }
     S.ttsBlob = await res.blob();
