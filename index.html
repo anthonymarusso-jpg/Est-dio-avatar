@@ -152,7 +152,7 @@ details[open] summary{margin-bottom:10px}
     <label>Como transcrever
       <select id="asrEngine">
         <option value="gemini">Gemini (rápido)</option>
-        <option value="local">No próprio celular</option>
+        <option value="local">Neste aparelho (sem Gemini)</option>
       </select>
     </label>
     <label id="asrModelWrap">Qualidade
@@ -175,7 +175,7 @@ details[open] summary{margin-bottom:10px}
 <!-- 3 -->
 <section class="step" id="s3">
   <div class="step-h"><div class="num">3</div><h2>Reescrever o texto</h2></div>
-  <p>O Gemini reescreve aqui mesmo, com o mesmo sentido e outras palavras. Se preferir o Claude, o outro botão abre o chat com o pedido pronto.</p>
+  <p>O Gemini reescreve aqui mesmo, com o mesmo sentido e outras palavras. Se preferir o Claude, o botão abre o chat com o pedido pronto. Sem acesso a nenhum dos dois, use <b>Copiar pedido</b> e cole em outra IA, como o Copilot.</p>
   <button class="btn primary" id="btnGemRewrite">Reescrever aqui com o Gemini</button>
   <div class="row">
     <a class="btn" id="btnClaude" href="https://claude.ai/new" target="_blank" rel="noopener">Abrir no Claude</a>
@@ -545,7 +545,7 @@ function updateClaudeLink(){ $('#btnClaude').href = 'https://claude.ai/new?q=' +
 $('#transcript').addEventListener('input', () => { updateClaudeLink(); markDone(2, !!$('#transcript').value.trim()); });
 $('#btnClaude').addEventListener('click', e => { if(!$('#transcript').value.trim()){ e.preventDefault(); setMsg('#claudeMsg','Faça a transcrição do passo 2 primeiro.','err'); } });
 $('#btnCopyPrompt').addEventListener('click', async () => {
-  try{ await navigator.clipboard.writeText(promptText()); setMsg('#claudeMsg','Pedido copiado. Cole no chat do Claude.','ok'); }
+  try{ await navigator.clipboard.writeText(promptText()); setMsg('#claudeMsg','Pedido copiado. Cole no Claude, no Copilot ou em outra IA e traga a resposta para cá.','ok'); }
   catch{ setMsg('#claudeMsg','Não consegui copiar. Use o botão Abrir no Claude.','err'); }
 });
 $('#rewritten').addEventListener('input', () => markDone(3, !!$('#rewritten').value.trim()));
