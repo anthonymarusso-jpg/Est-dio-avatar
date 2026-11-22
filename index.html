@@ -233,6 +233,26 @@ details[open] summary{margin-bottom:10px}
       </label>
     </div>
   </details>
+  <details id="ghBox">
+    <summary>Conexão pelo GitHub (para gerar a voz aqui)</summary>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <p>O Fish Audio não deixa sites gerarem voz direto. Com esta conexão, o seu repositório <b>Avatar-studio</b> gera a voz e devolve para o app.</p>
+      <ol class="how">
+        <li>Toque em <b>Criar token no GitHub</b>.</li>
+        <li>Em <b>Token name</b>, escreva <b>estudio-avatar</b>. Em <b>Expiration</b>, escolha 1 ano.</li>
+        <li>Em <b>Repository access</b>, marque <b>Only select repositories</b> e escolha <b>Avatar-studio</b>.</li>
+        <li>Em <b>Permissions</b>, abra <b>Repository permissions</b>, ache <b>Contents</b> e escolha <b>Read and write</b>.</li>
+        <li>Toque em <b>Generate token</b>, copie e cole aqui.</li>
+      </ol>
+      <a class="btn" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Criar token no GitHub</a>
+      <label>Token do GitHub
+        <input id="ghToken" type="password" placeholder="github_pat_…" autocomplete="off">
+      </label>
+      <label>Repositório
+        <input id="ghRepo" type="text" value="anthonymarusso-jpg/Avatar-studio" autocomplete="off">
+      </label>
+    </div>
+  </details>
 </section>
 
 <!-- 5 -->
@@ -328,7 +348,7 @@ function bindSaved(id, key, ev='input'){
   if (v != null){ if (el.type==='checkbox') el.checked = v; else el.value = v; }
   el.addEventListener(ev, () => store.set(key, el.type==='checkbox' ? el.checked : el.value));
 }
-['#gemKey:gemKey','#asrEngine:asrEngine','#fishKey:fishKey','#voiceId:voiceId','#fishModel:fishModel','#speed:speed','#asrModel:asrModel2','#transcript:transcript','#rewritten:rewritten','#postText:postText','#capWords:capWords','#capColor:capColor','#capPos:capPos','#capSize:capSize','#capUpper:capUpper','#scale:scale','#offsetY:offsetY','#bgColor:bgColor']
+['#ghToken:ghToken','#ghRepo:ghRepo','#gemKey:gemKey','#asrEngine:asrEngine','#fishKey:fishKey','#voiceId:voiceId','#fishModel:fishModel','#speed:speed','#asrModel:asrModel2','#transcript:transcript','#rewritten:rewritten','#postText:postText','#capWords:capWords','#capColor:capColor','#capPos:capPos','#capSize:capSize','#capUpper:capUpper','#scale:scale','#offsetY:offsetY','#bgColor:bgColor']
   .forEach(p => { const [id,k] = p.split(':'); bindSaved(id, k, (id==='#capUpper'||id==='#asrEngine'||id.includes('Model')||id==='#capWords'||id==='#capColor') ? 'change' : 'input'); });
 
 const S = {
@@ -562,6 +582,10 @@ $('#btnTTS').addEventListener('click', async () => {
   const body = { text, format:'mp3', language:'pt', prosody:{ speed:Number($('#speed').value) } };
   const voice = $('#voiceId').value.trim(); if (voice) body.reference_id = voice;
   try{
+    if ($('#ghToken').value.trim()){
+      S.ttsBlob = await ttsViaGitHub(body, $('#fishModel').value, key);
+      return showVoice();
+    }
     let res;
     const ttsUrl = 'https://api.fish.audio/v1/tts', payload = JSON.stringify(body);
     /* o navegador pode barrar o cabeçalho "model"; se isso acontecer, tenta sem ele (o Fish usa o modelo padrão da conta) */
@@ -574,16 +598,49 @@ $('#btnTTS').addEventListener('click', async () => {
       throw new Error(`O Fish Audio respondeu erro ${res.status}. ${m}`);
     }
     S.ttsBlob = await res.blob();
-    const url = URL.createObjectURL(S.ttsBlob);
-    const a = $('#ttsAudio'); a.src = url; a.hidden = false;
-    const d = $('#ttsDownload'); d.href = url; d.hidden = false;
-    setMsg('#ttsMsg','Voz pronta. Ouça e baixe para usar no DreamFace.','ok'); markDone(4);
+    showVoice();
   }catch(e){
     const cors = e instanceof TypeError;
-    setMsg('#ttsMsg', cors ? 'O Fish Audio não aceitou a conexão direta do celular. Use o botão Gerar no site do Fish Audio: o texto já vai copiado.' : e.message, 'err');
-  }
-  b.disabled = false;
+    if (cors) $('#ghBox').open = true;
+    setMsg('#ttsMsg', cors ? 'O Fish Audio não deixa o app gerar a voz direto. Configure a "Conexão pelo GitHub" logo abaixo (uma vez só) ou use o botão Gerar no site do Fish Audio.' : e.message, 'err');
+  } finally { b.disabled = false; }
 });
+function showVoice(){
+  const url = URL.createObjectURL(S.ttsBlob);
+  const a = $('#ttsAudio'); a.src = url; a.hidden = false;
+  const d = $('#ttsDownload'); d.href = url; d.hidden = false;
+  setMsg('#ttsMsg','Voz pronta. Ouça e baixe para usar no DreamFace.','ok'); markDone(4);
+}
+/* gera a voz pelo GitHub Actions do repositório Avatar-studio */
+async function ttsViaGitHub(body, model, key){
+  const tok = $('#ghToken').value.trim();
+  const repo = ($('#ghRepo').value.trim() || 'anthonymarusso-jpg/Avatar-studio').replace(/^https?:\/\/github\.com\//, '').replace(/\/+$/, '');
+  const api = 'https://api.github.com/repos/' + repo, H = { 'Authorization':'Bearer ' + tok, 'Accept':'application/vnd.github+json' };
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  let r;
+  try { r = await fetch(api + '/dispatches', { method:'POST', headers:{ ...H, 'Content-Type':'application/json' }, body: JSON.stringify({ event_type:'voz', client_payload:{ id, key, model, body } }) }); }
+  catch { throw new Error('Sem conexão com o GitHub. Confira a internet.'); }
+  if (r.status === 401) throw new Error('Token do GitHub recusado. Crie outro e cole de novo.');
+  if (r.status === 403 || r.status === 404) throw new Error('O token não tem acesso ao repositório ' + repo + '. Confira se escolheu Avatar-studio e a permissão Contents: Read and write.');
+  if (!r.ok) throw new Error('O GitHub respondeu erro ' + r.status + '.');
+  const raw = { ...H, 'Accept':'application/vnd.github.raw' }, ref = 'voz-' + id, t0 = Date.now();
+  const drop = () => fetch(api + '/git/refs/heads/' + ref, { method:'DELETE', headers:H }).catch(() => {});
+  while (Date.now() - t0 < 240000){
+    await new Promise(res => setTimeout(res, 4000));
+    setMsg('#ttsMsg', `Gerando a voz pelo GitHub… ${Math.floor((Date.now() - t0) / 1000)}s (leva uns 30 segundos)`);
+    let br; try { br = await fetch(api + '/branches/' + ref, { headers:H, cache:'no-store' }); } catch { continue; }
+    if (!br.ok) continue;
+    const f = await fetch(api + '/contents/voz.mp3?ref=' + ref, { headers:raw, cache:'no-store' });
+    if (f.ok){ const blob = await f.blob(); drop(); return new Blob([blob], { type:'audio/mpeg' }); }
+    const e = await fetch(api + '/contents/erro.txt?ref=' + ref, { headers:raw, cache:'no-store' });
+    const txt = e.ok ? await e.text() : ''; drop();
+    const code = (txt.split('\n')[0] || '').trim(); let m = ''; try { m = JSON.parse(txt.slice(txt.indexOf('{'))).message || ''; } catch {}
+    if (code === '401') throw new Error('Chave do Fish Audio recusada. Confira a chave.');
+    if (code === '402') throw new Error('Sem créditos na API do Fish Audio para esse modelo. Tente o modelo "S2.1 grátis" ou coloque créditos em fish.audio/app/billing.');
+    throw new Error('O Fish Audio respondeu erro ' + (code || '?') + '. ' + m);
+  }
+  throw new Error('O GitHub demorou demais. Abra o repositório Avatar-studio, aba Actions, e veja se a tarefa "Gerar voz" rodou.');
+}
 
 $('#btnFishSite').addEventListener('click', async () => {
   const text = $('#rewritten').value.trim();
