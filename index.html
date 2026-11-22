@@ -257,13 +257,26 @@ details[open] summary{margin-bottom:10px}
 
 <!-- 5 -->
 <section class="step" id="s5">
-  <div class="step-h"><div class="num">5</div><h2>Animar a boca no DreamFace</h2><span class="tag manual">fora do app</span></div>
-  <ol class="how">
-    <li>Baixe o áudio novo no passo 4 (aqui ou no site do Fish Audio).</li>
-    <li>No DreamFace, use o vídeo do passo 1 e troque o áudio pelo novo.</li>
-    <li>Salve o vídeo animado na galeria e volte aqui.</li>
-  </ol>
-  <button class="btn" id="btnDreamDone">Já fiz essa parte</button>
+  <div class="step-h"><div class="num">5</div><h2>Animar a boca</h2><span class="tag">DreamAPI</span></div>
+  <p>A DreamAPI (do DreamFace) junta o vídeo do passo 1 com a voz nova e sincroniza a boca. Custa cerca de <b>US$ 0,0075 por segundo</b> de vídeo, cobrado do saldo da sua conta DreamAPI. <span id="dreamCost"></span></p>
+  <div class="file"><b>Áudio da voz</b><br><span id="dreamAudioName">Usa a voz gerada no passo 4. Se gerou no site do Fish Audio, toque para escolher o arquivo.</span><input id="dreamAudio" type="file" accept="audio/*"></div>
+  <label style="flex-direction:row;align-items:flex-start;gap:8px;font-weight:400"><input id="dreamOk" type="checkbox" style="margin-top:3px"> Confirmo que o vídeo é de um avatar criado por IA, e não de uma pessoa real.</label>
+  <button class="btn primary" id="btnDream">Sincronizar a boca</button>
+  <div class="bar" id="dreamBar" hidden><i></i></div>
+  <div class="msg" id="dreamMsg"></div>
+  <video id="dreamResult" class="thumb" controls playsinline hidden></video>
+  <a class="btn" id="dreamDownload" target="_blank" rel="noopener" hidden>Baixar vídeo animado</a>
+  <details id="dreamKeyBox">
+    <summary>Chave da DreamAPI</summary>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <p>Crie a chave no painel da DreamAPI, em <b>API Keys</b>, e cole aqui. Ela fica salva só neste aparelho. Nunca cole a chave em conversas.</p>
+      <a class="btn" href="https://api.newportai.com/" target="_blank" rel="noopener">Abrir a DreamAPI</a>
+      <label>Chave
+        <input id="dreamKey" type="password" placeholder="sk-…" autocomplete="off">
+      </label>
+    </div>
+  </details>
+  <button class="btn" id="btnDreamDone">Fiz no app DreamFace, pular</button>
 </section>
 
 <!-- 6 -->
@@ -348,7 +361,7 @@ function bindSaved(id, key, ev='input'){
   if (v != null){ if (el.type==='checkbox') el.checked = v; else el.value = v; }
   el.addEventListener(ev, () => store.set(key, el.type==='checkbox' ? el.checked : el.value));
 }
-['#ghToken:ghToken','#ghRepo:ghRepo','#gemKey:gemKey','#asrEngine:asrEngine','#fishKey:fishKey','#voiceId:voiceId','#fishModel:fishModel','#speed:speed','#asrModel:asrModel2','#transcript:transcript','#rewritten:rewritten','#postText:postText','#capWords:capWords','#capColor:capColor','#capPos:capPos','#capSize:capSize','#capUpper:capUpper','#scale:scale','#offsetY:offsetY','#bgColor:bgColor']
+['#dreamKey:dreamKey','#ghToken:ghToken','#ghRepo:ghRepo','#gemKey:gemKey','#asrEngine:asrEngine','#fishKey:fishKey','#voiceId:voiceId','#fishModel:fishModel','#speed:speed','#asrModel:asrModel2','#transcript:transcript','#rewritten:rewritten','#postText:postText','#capWords:capWords','#capColor:capColor','#capPos:capPos','#capSize:capSize','#capUpper:capUpper','#scale:scale','#offsetY:offsetY','#bgColor:bgColor']
   .forEach(p => { const [id,k] = p.split(':'); bindSaved(id, k, (id==='#capUpper'||id==='#asrEngine'||id.includes('Model')||id==='#capWords'||id==='#capColor') ? 'change' : 'input'); });
 
 const S = {
@@ -712,6 +725,80 @@ if (store.get('voiceName', '')) setMsg('#voiceMsg', 'Voz escolhida: ' + store.ge
 
 /* ---------- 5. DreamFace ---------- */
 $('#btnDreamDone').addEventListener('click', () => { markDone(5); $('#s6').scrollIntoView({behavior:'smooth'}); });
+
+/* ---------- 5. DreamAPI: sincronizar a boca ---------- */
+const DREAM = 'https://api.newportai.com/api';
+let dreamAudioFile = null;
+$('#dreamAudio').addEventListener('change', e => { const f = e.target.files[0]; if (!f) return; dreamAudioFile = f; $('#dreamAudioName').textContent = f.name; });
+function dreamCostHint(){
+  const d = $('#srcVideo').duration;
+  $('#dreamCost').textContent = isFinite(d) && d > 0 ? `Este vídeo (${Math.round(d)} s) sai por uns US$ ${(d * 0.0075).toFixed(2).replace('.', ',')}.` : '';
+}
+$('#srcVideo').addEventListener('loadedmetadata', dreamCostHint);
+async function dreamPost(path, body){
+  const key = $('#dreamKey').value.trim();
+  let r;
+  try { r = await fetch(DREAM + path, { method:'POST', headers:{ 'Authorization':'Bearer ' + key, 'Content-Type':'application/json' }, body: JSON.stringify(body) }); }
+  catch { throw new Error('Sem conexão com a DreamAPI. Confira a internet.'); }
+  const j = await r.json().catch(() => ({}));
+  if (j.code === 13006) throw new Error('Chave da DreamAPI inválida. Crie outra no painel e cole de novo.');
+  if (!r.ok || j.code !== 0) throw new Error('A DreamAPI respondeu: ' + (j.message || ('erro ' + r.status)));
+  return j.data || {};
+}
+async function dreamUpload(file, label){
+  setMsg('#dreamMsg', `Enviando ${label}…`);
+  const pol = await dreamPost('/file/v1/get_policy', { scene:'Dream-CN' });
+  const fd = new FormData();
+  fd.append('success_action_status', '200'); fd.append('policy', pol.policy); fd.append('OSSAccessKeyId', pol.OSSAccessKeyId);
+  fd.append('signature', pol.signature); fd.append('key', pol.key); fd.append('callback', pol.callback);
+  fd.append('file', file, file.name || label);
+  let r; try { r = await fetch(pol.host, { method:'POST', body: fd }); } catch { throw new Error(`Não consegui enviar ${label}. Confira a internet.`); }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j.code !== 0) throw new Error(`O envio ${label === 'o vídeo' ? 'do vídeo' : 'do áudio'} falhou. Tente de novo.`);
+  const fin = await dreamPost('/file/v1/policy_upload_finish', { reqId: j.data?.reqId || pol.reqId });
+  if (!fin.url) throw new Error('A DreamAPI não devolveu o endereço do arquivo enviado.');
+  return fin.url;
+}
+$('#btnDream').addEventListener('click', async () => {
+  const audio = dreamAudioFile || (S.ttsBlob ? new File([S.ttsBlob], 'voz.mp3', { type:'audio/mpeg' }) : null);
+  if (!S.srcFile) return setMsg('#dreamMsg','Escolha o vídeo do avatar no passo 1.','err');
+  if (!audio) return setMsg('#dreamMsg','Gere a voz no passo 4 ou escolha o arquivo de áudio acima.','err');
+  if (!$('#dreamOk').checked) return setMsg('#dreamMsg','Marque a confirmação de que o vídeo é de um avatar criado por IA.','err');
+  if (!$('#dreamKey').value.trim()){ $('#dreamKeyBox').open = true; return setMsg('#dreamMsg','Coloque a chave da DreamAPI.','err'); }
+  const b = $('#btnDream'); b.disabled = true; setBar('#dreamBar', 0.05);
+  try {
+    const videoUrl = await dreamUpload(S.srcFile, 'o vídeo'); setBar('#dreamBar', 0.25);
+    const audioUrl = await dreamUpload(audio, 'o áudio'); setBar('#dreamBar', 0.35);
+    setMsg('#dreamMsg','Pedindo a sincronização…');
+    const task = await dreamPost('/async/lipsync', { srcVideoUrl: videoUrl, audioUrl, videoParams:{ video_width:0, video_height:0, video_enhance:1 } });
+    if (!task.taskId) throw new Error('A DreamAPI não devolveu o número da tarefa.');
+    const t0 = Date.now(); let url = '';
+    while (Date.now() - t0 < 15 * 60000){
+      await new Promise(r => setTimeout(r, 6000));
+      const sec = Math.floor((Date.now() - t0) / 1000);
+      setMsg('#dreamMsg', `Sincronizando a boca… ${Math.floor(sec/60)}min ${sec%60}s. Pode levar alguns minutos; deixe o app aberto.`);
+      setBar('#dreamBar', 0.35 + 0.6 * (1 - Math.exp(-sec / 120)));
+      const r = await dreamPost('/getAsyncResult', { taskId: task.taskId }).catch(() => null);
+      if (!r) continue;
+      const st = r.task?.status;
+      if (st === 4) throw new Error('A DreamAPI não conseguiu sincronizar: ' + (r.task?.reason || 'motivo não informado') + '.');
+      if (st === 3){ url = r.videos?.[0]?.videoUrl || ''; break; }
+    }
+    if (!url) throw new Error('Demorou demais. Tente de novo mais tarde.');
+    const rv = $('#dreamResult'); rv.src = url; rv.hidden = false;
+    const d = $('#dreamDownload'); d.href = url; d.hidden = false;
+    try {
+      const blob = await (await fetch(url)).blob();
+      const f = new File([blob], 'avatar-animado.mp4', { type: blob.type || 'video/mp4' });
+      S.finalFile = f; $('#finalName').textContent = 'Vídeo animado pela DreamAPI'; loadWorkVideo(f); clearCaptions(); markDone(6);
+      setMsg('#dreamMsg','Pronto! O vídeo animado já está no passo 6.','ok');
+    } catch {
+      setMsg('#dreamMsg','Pronto! Baixe o vídeo animado e escolha ele no passo 6.','ok');
+    }
+    markDone(5);
+  } catch (e) { setMsg('#dreamMsg', e.message, 'err'); }
+  setBar('#dreamBar', null); b.disabled = false;
+});
 
 /* ---------- 6. fundo ---------- */
 const vid = $('#work');
