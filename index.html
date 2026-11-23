@@ -142,8 +142,8 @@ details[open] summary{margin-bottom:10px}
 
 <!-- 1 -->
 <section class="step" id="s1">
-  <div class="step-h"><div class="num">1</div><h2>Vídeo do avatar</h2></div>
-  <p>Escolha o vídeo do avatar gerado por IA, do jeito que ele saiu da outra ferramenta.</p>
+  <div class="step-h"><div class="num">1</div><h2>Vídeo do TikTok para transcrever</h2></div>
+  <p>Escolha o vídeo que você quer transcrever. Se ele está no TikTok, pegue pelo link logo abaixo.</p>
   <details id="ttBox">
     <summary>Pegar um vídeo do TikTok</summary>
     <div style="display:flex;flex-direction:column;gap:10px">
@@ -283,7 +283,15 @@ details[open] summary{margin-bottom:10px}
 
 <!-- 5 -->
 <section class="step" id="s5">
-  <div class="step-h"><div class="num">5</div><h2>Animar a boca</h2></div>
+  <div class="step-h"><div class="num">5</div><h2>Animar a boca no DreamFace</h2><span class="tag manual">no app</span></div>
+  <ol class="how">
+    <li>Baixe a voz nova no passo 4.</li>
+    <li>Toque em <b>Abrir o DreamFace</b> e faça a boca do avatar com essa voz.</li>
+    <li>Salve o vídeo na galeria e escolha ele no passo 6.</li>
+  </ol>
+  <a class="btn primary" id="btnOpenDream" href="https://apps.apple.com/app/id1624172324" target="_blank" rel="noopener">Abrir o DreamFace</a>
+  <button class="btn" id="btnDreamDone">Já fiz, ir para o passo 6</button>
+  <div id="s5old" hidden>
   <div class="file"><b>Áudio da voz</b><br><span id="dreamAudioName">Usa a voz gerada no passo 4. Se gerou no site do Fish Audio, toque para escolher o arquivo.</span><input id="dreamAudio" type="file" accept="audio/*"></div>
   <label style="flex-direction:row;align-items:flex-start;gap:8px;font-weight:400"><input id="dreamOk" type="checkbox" style="margin-top:3px"> Confirmo que o rosto é de um avatar criado por IA, e não de uma pessoa real.</label>
 
@@ -316,7 +324,7 @@ details[open] summary{margin-bottom:10px}
       </label>
     </div>
   </details>
-  <button class="btn" id="btnDreamDone">Fiz no app DreamFace, pular</button>
+</div>
 </section>
 
 <!-- 6 -->
@@ -352,17 +360,27 @@ details[open] summary{margin-bottom:10px}
         <button type="button" data-tab="tMine" aria-selected="false">Minhas imagens</button>
       </div>
       <div id="tAnim" hidden>
-        <div class="msg">Emojis animados do Google (Noto). Eles se mexem no vídeo exportado.</div>
+        <div class="row"><input id="gifQ" type="text" placeholder="ex.: fogo, risada, dinheiro, Brasil" enterkeyhint="search"><button class="btn" id="btnGifQ" style="flex:0 0 auto">Buscar</button></div>
+        <div class="msg" id="gifMsg">Busca stickers animados na internet (GIPHY). Sem buscar, aparecem os emojis animados do Google.</div>
+        <div class="pick" id="gifList"></div>
         <div class="pick" id="animList"></div>
+        <details id="giphyKeyBox">
+          <summary>Chave grátis do GIPHY (para buscar)</summary>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+            <p>Entre em <b>developers.giphy.com</b>, toque em <b>Create an API Key</b>, escolha <b>API</b>, dê um nome qualquer e cole a chave aqui. É grátis e fica salva só neste aparelho.</p>
+            <a class="btn" href="https://developers.giphy.com/dashboard/" target="_blank" rel="noopener">Abrir o GIPHY</a>
+            <label>Chave do GIPHY <input id="giphyKey" type="password" placeholder="Cole a chave aqui" autocomplete="off"></label>
+          </div>
+        </details>
       </div>
       <div id="tStick"><div class="pick" id="stickList"></div></div>
       <div id="tIcon" hidden>
-        <div class="row"><input id="iconQ" type="text" placeholder="em inglês acha mais: fire, arrow, money" enterkeyhint="search"><button class="btn" id="btnIconQ" style="flex:0 0 auto">Buscar</button></div>
+        <div class="row"><input id="iconQ" type="text" placeholder="ex.: fogo, seta, dinheiro, megafone" enterkeyhint="search"><button class="btn" id="btnIconQ" style="flex:0 0 auto">Buscar</button></div>
         <div class="msg" id="iconMsg"></div>
         <div class="pick" id="iconList"></div>
       </div>
       <div id="tPhoto" hidden>
-        <div class="row"><input id="photoQ" type="text" placeholder="em inglês acha mais: crowd, city, flag" enterkeyhint="search"><button class="btn" id="btnPhotoQ" style="flex:0 0 auto">Buscar</button></div>
+        <div class="row"><input id="photoQ" type="text" placeholder="ex.: multidão, cidade, bandeira do Brasil" enterkeyhint="search"><button class="btn" id="btnPhotoQ" style="flex:0 0 auto">Buscar</button></div>
         <div class="msg" id="photoMsg">Fotos livres do Openverse, com licença Creative Commons.</div>
         <div class="pick photos" id="photoList"></div>
       </div>
@@ -394,7 +412,7 @@ details[open] summary{margin-bottom:10px}
   <details id="photoCutBox">
     <summary>Tirar o fundo de uma foto</summary>
     <div style="display:flex;flex-direction:column;gap:10px">
-      <p>Deixa só as pessoas e entrega um PNG sem fundo, para usar onde quiser.</p>
+      <p>Tira o fundo e entrega um PNG transparente, para usar onde quiser. Também funciona com objetos e animais.</p>
       <div class="file"><b>Escolher foto</b><br><span id="cutName">JPG ou PNG da galeria</span><input id="cutInput" type="file" accept="image/*"></div>
       <div class="msg" id="cutMsg"></div>
       <div class="stage"><canvas id="cutCanvas" hidden style="max-width:100%;width:320px;height:auto;border-radius:12px;background:repeating-conic-gradient(#2a3440 0 25%,#1a2129 0 50%) 0 0/20px 20px"></canvas></div>
@@ -473,7 +491,7 @@ function bindSaved(id, key, ev='input'){
   if (v != null){ if (el.type==='checkbox') el.checked = v; else el.value = v; }
   el.addEventListener(ev, () => store.set(key, el.type==='checkbox' ? el.checked : el.value));
 }
-['#dreamKey:dreamKey','#ghToken:ghToken','#ghRepo:ghRepo','#gemKey:gemKey','#asrEngine:asrEngine','#fishKey:fishKey','#voiceId:voiceId','#fishModel:fishModel','#speed:speed','#asrModel:asrModel2','#transcript:transcript','#rewritten:rewritten','#postText:postText','#capWords:capWords','#capColor:capColor','#capPos:capPos','#capSize:capSize','#capUpper:capUpper','#scale:scale','#offsetY:offsetY','#bgColor:bgColor']
+['#giphyKey:giphyKey','#dreamKey:dreamKey','#ghToken:ghToken','#ghRepo:ghRepo','#gemKey:gemKey','#asrEngine:asrEngine','#fishKey:fishKey','#voiceId:voiceId','#fishModel:fishModel','#speed:speed','#asrModel:asrModel2','#transcript:transcript','#rewritten:rewritten','#postText:postText','#capWords:capWords','#capColor:capColor','#capPos:capPos','#capSize:capSize','#capUpper:capUpper','#scale:scale','#offsetY:offsetY','#bgColor:bgColor']
   .forEach(p => { const [id,k] = p.split(':'); bindSaved(id, k, (id==='#capUpper'||id==='#asrEngine'||id.includes('Model')||id==='#capWords'||id==='#capColor') ? 'change' : 'input'); });
 
 const S = {
@@ -838,6 +856,15 @@ if (store.get('voiceName', '')) setMsg('#voiceMsg', 'Voz escolhida: ' + store.ge
 
 /* ---------- 5. DreamFace ---------- */
 $('#btnDreamDone').addEventListener('click', () => { markDone(5); $('#s6').scrollIntoView({behavior:'smooth'}); });
+(function dreamFaceLink(){
+  const a = $('#btnOpenDream'), ua = navigator.userAgent;
+  if (/Android/i.test(ua)){
+    const store = 'https://play.google.com/store/apps/details?id=com.dreamapp.dubhe';
+    a.href = 'intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.dreamapp.dubhe;S.browser_fallback_url=' + encodeURIComponent(store) + ';end';
+    a.removeAttribute('target');
+  } else if (/iPhone|iPad|iPod/i.test(ua)) a.href = 'https://apps.apple.com/app/id1624172324';
+  else a.href = 'https://play.google.com/store/apps/details?id=com.dreamapp.dubhe';
+})();
 
 /* ---------- 5a. Boca falante (grátis, no aparelho) ---------- */
 let faceLm = null, talkPhotoFile = null, talkBase = null, talkMesh = null, dreamAudioFile = null;
@@ -1023,8 +1050,28 @@ async function getPhotoSeg(delegate){
   photoSegs[delegate] = await ImageSegmenter.createFromOptions(fs, { baseOptions:{ modelAssetPath: MULTI_MODEL, delegate }, runningMode:'IMAGE', outputCategoryMask:false, outputConfidenceMasks:true });
   return photoSegs[delegate];
 }
-/* recorta as pessoas de uma imagem; tenta na placa de vídeo e, se falhar, no processador */
-async function cutPerson(src){
+/* remove o fundo de qualquer imagem: primeiro com o @imgly/background-removal (roda no aparelho), depois MediaPipe */
+let imglyMod = null;
+async function cutPerson(src, onMsg){
+  try {
+    onMsg?.('Baixando o removedor de fundo (só na primeira vez, uns 40 MB)…');
+    if (!imglyMod) imglyMod = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm');
+    const iw = src.naturalWidth || src.width, ih = src.naturalHeight || src.height;
+    const sc = Math.min(1, 2048 / Math.max(iw, ih)), c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(iw * sc)); c.height = Math.max(1, Math.round(ih * sc)); c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+    const outBlob = await imglyMod.removeBackground(blob, { model:'isnet_quint8', output:{ format:'image/png' },
+      progress: (k, cur, tot) => { if (tot) onMsg?.(`Baixando o removedor de fundo… ${Math.round(cur / tot * 100)}%`); } });
+    onMsg?.('Recortando…');
+    const bmp = await createImageBitmap(outBlob), oc = document.createElement('canvas'); oc.width = bmp.width; oc.height = bmp.height; oc.getContext('2d').drawImage(bmp, 0, 0);
+    return oc;
+  } catch (e) {
+    console.warn('imgly falhou, usando MediaPipe', e);
+    onMsg?.('Usando o recorte de pessoas…');
+    return cutPersonMP(src);
+  }
+}
+async function cutPersonMP(src){
   const iw = src.naturalWidth || src.width, ih = src.naturalHeight || src.height;
   const sc = Math.min(1, 2048 / Math.max(iw, ih)), W = Math.max(1, Math.round(iw * sc)), H = Math.max(1, Math.round(ih * sc));
   const work = document.createElement('canvas'); work.width = W; work.height = H; work.getContext('2d').drawImage(src, 0, 0, W, H);
@@ -1053,11 +1100,11 @@ $('#cutInput').addEventListener('change', async e => {
   const f = e.target.files[0]; if (!f) return;
   $('#cutName').textContent = f.name; setMsg('#cutMsg', 'Tirando o fundo…'); $('#cutDownload').hidden = true;
   try {
-    const img = await loadImage(f), cut = await cutPerson(img);
+    const img = await loadImage(f), cut = await cutPerson(img, m => setMsg('#cutMsg', m));
     const out = $('#cutCanvas'); out.width = cut.width; out.height = cut.height; out.hidden = false;
     out.getContext('2d').drawImage(cut, 0, 0);
     out.toBlob(bl => { const a = $('#cutDownload'); a.href = URL.createObjectURL(bl); a.download = f.name.replace(/\.[^.]+$/, '') + '-sem-fundo.png'; a.hidden = false; }, 'image/png');
-    setMsg('#cutMsg', 'Pronto. Só as pessoas ficaram.', 'ok');
+    setMsg('#cutMsg', 'Pronto, fundo removido.', 'ok');
   } catch (err) { setMsg('#cutMsg', err.message || 'Não consegui tirar o fundo dessa foto.', 'err'); }
 });
 
@@ -1150,7 +1197,7 @@ async function switchToCpu(){
 function loadWorkVideo(file){
   vid.src = URL.createObjectURL(file);
   vid.onloadeddata = () => { vid.currentTime = 0.05; };
-  vid.onseeked = () => { if (!S.playing && !S.exporting) renderFrame(); };
+  vid.onseeked = () => { if (!S.playing && !S.exporting) renderFrame(); if (needsSeg()) getSegmenter().catch(()=>{}); };
   $('#btnPlay').disabled = false; $('#btnCaps').disabled = false;
   ensureAvatarClip();
 }
@@ -1238,7 +1285,7 @@ function refreshBg(){
   paintTheme(bgCache.getContext('2d'), S.bg, OUT_W, OUT_H);
   $('#colorWrap').hidden = S.bg !== 'cor'; $('#imgWrap').hidden = S.bg !== 'imagem';
   document.querySelectorAll('.theme').forEach(t => t.setAttribute('aria-pressed', t.dataset.id === S.bg));
-  if (needsSeg() && S.userPickedBg) getSegmenter().catch(()=>{});
+  if (needsSeg() && (S.userPickedBg || vid.readyState >= 2)) getSegmenter().catch(()=>{});
   if (!S.playing && !S.exporting) renderFrame();
 }
 (function buildThemes(){
@@ -1271,6 +1318,7 @@ function getSegmenter(){
     try { segmenter = await make('GPU'); $('#engine').textContent = 'Recorte na placa de vídeo'; }
     catch { segmenter = await make('CPU'); $('#engine').textContent = 'Recorte no processador'; }
     setMsg('#segMsg','');
+    if (!S.playing && !S.exporting) renderFrame();
     return segmenter;
   })().catch(e => { segLoading = null; setMsg('#segMsg','Não consegui carregar o recorte de fundo. Confira a internet e tente de novo.','err'); throw e; });
   return segLoading;
@@ -1341,6 +1389,7 @@ function drawLayer(ctx, L){
   const live = S.playing || S.exporting, t = vid.currentTime || 0;
   if (live && (t < (L.t0 || 0) || (L.t1 != null && t > L.t1))) return;
   if (L.anim){ const tt = live ? t : performance.now() / 1000; L.anim.goToAndStop(Math.floor(tt * L.fr) % Math.max(1, L.frames), true); }
+  if (L.gif && L.gifTotal){ const tt = (live ? t : performance.now() / 1000) % L.gifTotal; let f = L.gif[0]; for (const fr of L.gif){ if (fr.t0 <= tt) f = fr; else break; } L.img = f.bmp; }
   const [w, h] = layerSize(L);
   ctx.save(); ctx.globalAlpha = L.op; ctx.translate(L.x, L.y); ctx.rotate(L.rot * Math.PI / 180);
   ctx.drawImage(L.img, -w / 2, -h / 2, w, h); ctx.restore();
@@ -1384,12 +1433,12 @@ function renderLayerList(){
     btn('↑', 'Trazer para frente', () => moveLayer(L, 1));
     btn('↓', 'Mandar para trás', () => moveLayer(L, -1));
     if (L.type !== 'person'){
-      if (!L.shape && !L.icon && !L.anim) btn('✂', 'Tirar o fundo', async () => {
+      if (!L.shape && !L.icon && !L.anim && !L.gif) btn('✂', 'Tirar o fundo da imagem', async () => {
         setMsg('#layerMsg', 'Tirando o fundo da imagem…');
-        try { L.img = await cutPerson(L.img); renderLayerList(); redraw(); setMsg('#layerMsg', 'Fundo removido. Só as pessoas ficaram.', 'ok'); }
+        try { L.img = await cutPerson(L.img, m => setMsg('#layerMsg', m)); renderLayerList(); redraw(); setMsg('#layerMsg', 'Fundo removido.', 'ok'); }
         catch (e) { setMsg('#layerMsg', e.message, 'err'); }
       });
-      if (!L.anim) btn('⧉', 'Duplicar', () => addLayer(L.img, L.name, { ...L, id: undefined, x: L.x + 30, y: L.y + 30 }));
+      if (!L.anim && !L.gif) btn('⧉', 'Duplicar', () => addLayer(L.img, L.name, { ...L, id: undefined, x: L.x + 30, y: L.y + 30 }));
       btn('✕', 'Apagar', () => { S.layers = S.layers.filter(x => x !== L); selectLayer(null); });
     }
     row.append(th, nm, acts); box.append(row);
@@ -1445,15 +1494,25 @@ function shapeCanvas(kind, color, style){
     box.append(b);
   });
 })();
+/* buscas em português: traduz para o inglês quando a biblioteca só entende inglês */
+async function toEnglish(q){
+  try {
+    const j = await (await fetch('https://api.mymemory.translated.net/get?langpair=pt-BR|en&q=' + encodeURIComponent(q))).json();
+    const t = j?.responseData?.translatedText;
+    if (t && !/MYMEMORY|INVALID|QUERY LENGTH/i.test(t)) return t.toLowerCase();
+  } catch {}
+  return q;
+}
 /* ícones (Iconify) */
 const iconURL = (name, color) => { const [pre, ic] = name.split(':'); return `https://api.iconify.design/${pre}/${ic}.svg?height=512&color=${encodeURIComponent(color)}`; };
 async function searchIcons(){
   const q = $('#iconQ').value.trim(); if (!q) return;
   setMsg('#iconMsg', 'Buscando…'); $('#iconList').innerHTML = '';
   try {
-    const j = await (await fetch('https://api.iconify.design/search?limit=60&query=' + encodeURIComponent(q))).json();
+    const en = await toEnglish(q);
+    const j = await (await fetch('https://api.iconify.design/search?limit=80&query=' + encodeURIComponent(en))).json();
     const icons = j.icons || [];
-    if (!icons.length) return setMsg('#iconMsg', 'Nenhum ícone. Tente outra palavra, de preferência em inglês.', 'err');
+    if (!icons.length) return setMsg('#iconMsg', 'Nenhum ícone com essa palavra. Tente outra.', 'err');
     setMsg('#iconMsg', `${icons.length} ícones. Toque para colocar no vídeo.`, 'ok');
     icons.forEach(n => {
       const b = document.createElement('button'); b.type = 'button'; b.title = n;
@@ -1470,9 +1529,10 @@ async function searchPhotos(){
   const q = $('#photoQ').value.trim(); if (!q) return;
   setMsg('#photoMsg', 'Buscando…'); $('#photoList').innerHTML = '';
   try {
-    const j = await (await fetch('https://api.openverse.org/v1/images/?page_size=30&mature=false&q=' + encodeURIComponent(q))).json();
+    const en = await toEnglish(q);
+    const j = await (await fetch('https://api.openverse.org/v1/images/?page_size=40&mature=false&q=' + encodeURIComponent(en))).json();
     const items = (j.results || []).filter(x => x.thumbnail);
-    if (!items.length) return setMsg('#photoMsg', 'Nenhuma foto. Tente outra palavra, de preferência em inglês.', 'err');
+    if (!items.length) return setMsg('#photoMsg', 'Nenhuma foto com essa palavra. Tente outra.', 'err');
     setMsg('#photoMsg', `${items.length} fotos livres (Creative Commons). Toque para colocar no vídeo.`, 'ok');
     items.forEach(it => {
       const b = document.createElement('button'); b.type = 'button'; b.title = (it.title || '') + (it.creator ? ' — ' + it.creator : '');
@@ -1576,7 +1636,49 @@ async function addAnimated(code){
     b.addEventListener('click', () => addAnimated(code)); box.append(b);
   });
 })();
-setInterval(() => { if (!S.playing && !S.exporting && !document.hidden && S.layers.some(L => L.anim)) renderFrame(); }, 80);
+async function decodeAnimated(url){
+  const buf = await (await fetch(url)).arrayBuffer();
+  const type = /\.webp/i.test(url) ? 'image/webp' : 'image/gif';
+  if (!('ImageDecoder' in window)){ const img = await loadURL(url); return { img, gif: null, total: 0 }; }
+  const dec = new ImageDecoder({ data: buf, type }); await dec.tracks.ready;
+  const n = Math.min(150, dec.tracks.selectedTrack.frameCount), frames = []; let t = 0;
+  for (let i = 0; i < n; i++){
+    const { image } = await dec.decode({ frameIndex: i });
+    const bmp = await createImageBitmap(image), d = Math.max(0.02, (image.duration || 100000) / 1e6); image.close();
+    frames.push({ bmp, t0: t }); t += d;
+  }
+  dec.close?.();
+  return { img: frames[0].bmp, gif: frames, total: t };
+}
+async function searchGifs(){
+  const q = $('#gifQ').value.trim(); if (!q) return;
+  const key = $('#giphyKey').value.trim();
+  if (!key){ $('#giphyKeyBox').open = true; return setMsg('#gifMsg', 'Para buscar na internet, coloque a chave grátis do GIPHY logo abaixo.', 'err'); }
+  setMsg('#gifMsg', 'Buscando…'); $('#gifList').innerHTML = '';
+  try {
+    const r = await fetch(`https://api.giphy.com/v1/stickers/search?api_key=${encodeURIComponent(key)}&q=${encodeURIComponent(q)}&limit=40&lang=pt&rating=pg-13`);
+    if (r.status === 401 || r.status === 403) throw new Error('Chave do GIPHY recusada. Confira e cole de novo.');
+    if (r.status === 429) throw new Error('O limite grátis do GIPHY acabou por agora. Tente daqui a pouco.');
+    const j = await r.json(), items = j.data || [];
+    if (!items.length) return setMsg('#gifMsg', 'Nenhum sticker com essa palavra. Tente outra.', 'err');
+    setMsg('#gifMsg', `${items.length} stickers animados. Toque para colocar no vídeo.`, 'ok');
+    items.forEach(it => {
+      const im0 = it.images || {}, thumb = im0.fixed_width_small?.url || im0.fixed_width?.url, full = im0.fixed_width?.webp || im0.fixed_width?.url;
+      if (!thumb || !full) return;
+      const b = document.createElement('button'); b.type = 'button'; b.title = it.title || 'Sticker';
+      const im = document.createElement('img'); im.loading = 'lazy'; im.alt = ''; im.src = thumb; b.append(im);
+      b.addEventListener('click', async () => {
+        setMsg('#gifMsg', 'Preparando o sticker…');
+        try { const a = await decodeAnimated(full); addLayer(a.img, (it.title || 'Sticker animado').slice(0, 40), { gif: a.gif, gifTotal: a.total, s: 0.35 }); setMsg('#gifMsg', a.gif ? 'Sticker colocado. Ele se mexe na prévia e no vídeo.' : 'Sticker colocado. Neste navegador ele fica parado no vídeo.', 'ok'); }
+        catch { setMsg('#gifMsg', 'Esse sticker não pôde ser usado. Escolha outro.', 'err'); }
+      });
+      $('#gifList').append(b);
+    });
+  } catch (e) { setMsg('#gifMsg', e.message || 'Não consegui buscar agora. Confira a internet.', 'err'); }
+}
+$('#btnGifQ').addEventListener('click', searchGifs);
+$('#gifQ').addEventListener('keydown', e => { if (e.key === 'Enter') searchGifs(); });
+setInterval(() => { if (!S.playing && !S.exporting && !document.hidden && S.layers.some(L => L.anim || L.gif)) renderFrame(); }, 80);
 
 /* ---------- 8. montagem: cortes, clipes e transições ---------- */
 let clipSeq = 0;
@@ -1586,8 +1688,16 @@ const clipLen = c => c.kind === 'image' ? c.photoDur : Math.max(0, c.b - c.a);
 function ensureAvatarClip(){
   let c = S.clips.find(x => x.kind === 'avatar');
   if (!c){ c = { id:'avatar', kind:'avatar', name:'Avatar (passos 1 a 7)', el: vid, a:0, b:0, dur:0, trans:'fade', tlen:0.5 }; S.clips.unshift(c); }
-  const set = () => { c.dur = vid.duration || 0; c.a = 0; c.b = c.dur; renderClips(); };
-  if (vid.readyState >= 1 && isFinite(vid.duration)) set(); else vid.addEventListener('loadedmetadata', set, { once:true });
+  const set = async () => { c.dur = await realDuration(vid); c.a = 0; c.b = c.dur; renderClips(); };
+  if (vid.readyState >= 1) set(); else vid.addEventListener('loadedmetadata', set, { once:true });
+}
+function realDuration(v){
+  return new Promise(res => {
+    if (isFinite(v.duration) && v.duration > 0) return res(v.duration);
+    const h = () => { if (isFinite(v.duration) && v.duration > 0){ v.removeEventListener('durationchange', h); clearTimeout(to); v.currentTime = 0; res(v.duration); } };
+    const to = setTimeout(() => { v.removeEventListener('durationchange', h); res(isFinite(v.duration) ? v.duration : 0); }, 5000);
+    v.addEventListener('durationchange', h); v.currentTime = 1e7;
+  });
 }
 function seekTo(v, t){
   return new Promise(res => {
@@ -1604,8 +1714,10 @@ async function addClipFile(f){
     } else {
       const v = document.createElement('video'); v.playsInline = true; v.preload = 'auto'; v.className = 'hidden-video'; v.src = URL.createObjectURL(f); document.body.append(v);
       await new Promise((res, rej) => { v.onloadedmetadata = res; v.onerror = () => rej(new Error('Não consegui abrir ' + f.name + '.')); });
-      await seekTo(v, Math.min(0.1, v.duration / 2));
-      S.clips.push({ id:'c' + (++clipSeq), kind:'video', name:f.name, el:v, dur:v.duration, a:0, b:v.duration, trans:'fade', tlen:0.5 });
+      const dur = await realDuration(v);
+      if (!dur) throw new Error('Não consegui ler a duração de ' + f.name + '.');
+      await seekTo(v, Math.min(0.1, dur / 2));
+      S.clips.push({ id:'c' + (++clipSeq), kind:'video', name:f.name, el:v, dur, a:0, b:dur, trans:'fade', tlen:0.5 });
     }
     renderClips();
   } catch (e) { setMsg('#tlInfo', e.message, 'err'); }
@@ -1710,23 +1822,29 @@ async function runTimeline(record, onProgress){
   }
   const started = new Set(), ended = new Set(), t0 = performance.now();
   await new Promise(resolve => {
+    let finished = false;
+    const finish = () => { if (!finished){ finished = true; resolve(); } };
     const tick = () => {
-      if (run.stop) return resolve();
+      if (finished) return;
+      if (run.stop) return finish();
       const t = (performance.now() - t0) / 1000;
-      for (const it of P){
-        if (it.c.kind === 'image') continue;
-        const v = it.c.el;
-        if (!started.has(it) && t >= it.s){ started.add(it); v.play().catch(() => {}); }
-        if (started.has(it) && !ended.has(it) && (t >= it.s + it.len || v.currentTime >= it.c.b - 0.02)){ ended.add(it); v.pause(); }
-      }
-      const act = P.filter(it => t >= it.s && t < it.s + it.len);
-      if (act.length >= 2){ const [A, B] = act; drawClip(bA, A, t - A.s); drawClip(bB, B, t - B.s); compose(tlx, A.c.trans, A.T ? (t - B.s) / A.T : 1); }
-      else if (act.length === 1) drawClip(tlx, act[0], t - act[0].s);
+      try {
+        for (const it of P){
+          if (it.c.kind === 'image') continue;
+          const v = it.c.el;
+          if (!started.has(it) && t >= it.s){ started.add(it); v.play().catch(() => {}); }
+          if (started.has(it) && !ended.has(it) && (t >= it.s + it.len || v.ended || v.currentTime >= it.c.b - 0.02)){ ended.add(it); v.pause(); }
+        }
+        const act = P.filter(it => t >= it.s && t < it.s + it.len);
+        if (act.length >= 2){ const [A, B] = act; drawClip(bA, A, t - A.s); drawClip(bB, B, t - B.s); compose(tlx, A.c.trans, A.T ? (t - B.s) / A.T : 1); }
+        else if (act.length === 1) drawClip(tlx, act[0], t - act[0].s);
+      } catch (e) { console.warn('quadro com erro', e); }
       onProgress?.(Math.min(1, t / total));
-      if (t >= total) return resolve();
-      requestAnimationFrame(tick);
+      if (t >= total) return finish();
+      setTimeout(tick, 15);
     };
     tick();
+    setTimeout(finish, (total + 5) * 1000);
   });
   P.forEach(it => { if (it.c.kind !== 'image') it.c.el.pause(); });
   S.exporting = false; tlRun = null; if (S.spk) S.spk.gain.value = 1;
