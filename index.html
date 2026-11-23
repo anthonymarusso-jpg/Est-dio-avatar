@@ -329,8 +329,9 @@ details[open] summary{margin-bottom:10px}
 
 <!-- 6 -->
 <section class="step" id="s6">
-  <div class="step-h"><div class="num">6</div><h2>Trocar o fundo</h2></div>
+  <div class="step-h"><div class="num">6</div><h2>Remover e trocar o fundo do vídeo</h2></div>
   <div class="file"><b>Escolher o vídeo do DreamFace</b><br><span id="finalName">Sem escolher, o app usa o vídeo do passo 1</span><input id="finalInput" type="file" accept="video/*"></div>
+  <label style="flex-direction:row;align-items:center;gap:10px;font-size:15px;color:var(--fg)"><input id="rmBg" type="checkbox" checked style="width:22px;height:22px;accent-color:var(--accent)"> Remover o fundo do vídeo (deixa só a pessoa)</label>
   <div class="themes" id="themes"></div>
   <div class="row" id="bgExtra">
     <label id="colorWrap" hidden>Cor<input id="bgColor" type="color" value="#1d4ed8"></label>
@@ -352,18 +353,16 @@ details[open] summary{margin-bottom:10px}
     <summary>Elementos: stickers, ícones, fotos, formas e suas imagens</summary>
     <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
       <div class="tabs" role="tablist">
-        <button type="button" data-tab="tAnim" aria-selected="false">Animados</button>
-        <button type="button" data-tab="tStick" aria-selected="true">Stickers</button>
+        <button type="button" data-tab="tAnim" aria-selected="true">Stickers animados</button>
         <button type="button" data-tab="tIcon" aria-selected="false">Ícones</button>
         <button type="button" data-tab="tPhoto" aria-selected="false">Fotos grátis</button>
         <button type="button" data-tab="tShape" aria-selected="false">Formas</button>
         <button type="button" data-tab="tMine" aria-selected="false">Minhas imagens</button>
       </div>
-      <div id="tAnim" hidden>
+      <div id="tAnim">
         <div class="row"><input id="gifQ" type="text" placeholder="ex.: fogo, risada, dinheiro, Brasil" enterkeyhint="search"><button class="btn" id="btnGifQ" style="flex:0 0 auto">Buscar</button></div>
-        <div class="msg" id="gifMsg">Busca stickers animados na internet (GIPHY). Sem buscar, aparecem os emojis animados do Google.</div>
+        <div class="msg" id="gifMsg">Digite o que procura e toque em Buscar. Os stickers vêm do GIPHY.</div>
         <div class="pick" id="gifList"></div>
-        <div class="pick" id="animList"></div>
         <details id="giphyKeyBox">
           <summary>Chave grátis do GIPHY (para buscar)</summary>
           <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
@@ -373,7 +372,6 @@ details[open] summary{margin-bottom:10px}
           </div>
         </details>
       </div>
-      <div id="tStick"><div class="pick" id="stickList"></div></div>
       <div id="tIcon" hidden>
         <div class="row"><input id="iconQ" type="text" placeholder="ex.: fogo, seta, dinheiro, megafone" enterkeyhint="search"><button class="btn" id="btnIconQ" style="flex:0 0 auto">Buscar</button></div>
         <div class="msg" id="iconMsg"></div>
@@ -1337,7 +1335,7 @@ $('#bgImage').addEventListener('change', e => {
 });
 ['#scale','#offsetY'].forEach(id => $(id).addEventListener('input', () => { if (!S.playing && !S.exporting) renderFrame(); }));
 
-function needsSeg(){ return S.bg !== 'original'; }
+function needsSeg(){ return $('#rmBg').checked && S.bg !== 'original'; }
 function getSegmenter(){
   if (segmenter) return Promise.resolve(segmenter);
   if (segLoading) return segLoading;
@@ -1489,20 +1487,12 @@ function moveLayer(L, dir){
   const a = $('#elT0').value, z = $('#elT1').value; L.t0 = a === '' ? null : Math.max(0, Number(a)); L.t1 = z === '' ? null : Math.max(0, Number(z));
   redraw();
 }));
+$('#rmBg').addEventListener('change', () => { if (needsSeg()) getSegmenter().catch(()=>{}); redraw(); });
 ['#olOn','#olColor','#olWidth'].forEach(id => $(id).addEventListener('input', () => { if (needsSeg()) getSegmenter().catch(()=>{}); redraw(); }));
 document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('.tabs button').forEach(x => { x.setAttribute('aria-selected', x === b); $('#' + x.dataset.tab).hidden = x !== b; });
 }));
 /* stickers (OpenMoji) */
-(function buildStickers(){
-  const box = $('#stickList');
-  EMOJIS.forEach(code => {
-    const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', 'Sticker');
-    const im = document.createElement('img'); im.loading = 'lazy'; im.alt = ''; im.src = OM + code + '.svg'; b.append(im);
-    b.addEventListener('click', async () => { try { const i = await loadURL(OM + code + '.svg'); addLayer(rasterSquare(i), 'Sticker', { s: 0.28 }); } catch (e) { setMsg('#layerMsg', e.message, 'err'); } });
-    box.append(b);
-  });
-})();
 /* formas desenhadas no app */
 function shapeCanvas(kind, color, style){
   const wide = kind === 'seta' || kind === 'tarja', W = 512, H = kind === 'tarja' ? 140 : wide ? 260 : 512;
@@ -1663,14 +1653,6 @@ async function addAnimated(code){
     setMsg('#layerMsg', 'Sticker animado colocado. Ele se mexe na prévia e no vídeo exportado.', 'ok');
   } catch (e) { setMsg('#layerMsg', e.message || 'Não consegui carregar esse sticker.', 'err'); }
 }
-(function buildAnimated(){
-  const box = $('#animList');
-  ANIMS.forEach(code => {
-    const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', 'Sticker animado');
-    const im = document.createElement('img'); im.loading = 'lazy'; im.alt = ''; im.src = NOTO + code + '/512.webp'; im.onerror = () => b.remove(); b.append(im);
-    b.addEventListener('click', () => addAnimated(code)); box.append(b);
-  });
-})();
 async function decodeAnimated(url){
   const buf = await (await fetch(url)).arrayBuffer();
   const type = /\.webp/i.test(url) ? 'image/webp' : 'image/gif';
@@ -1723,7 +1705,7 @@ const clipLen = c => c.kind === 'image' ? c.photoDur : Math.max(0, c.b - c.a);
 function ensureAvatarClip(){
   let c = S.clips.find(x => x.kind === 'avatar');
   if (!c){ c = { id:'avatar', kind:'avatar', name:'Avatar (passos 1 a 7)', el: vid, a:0, b:0, dur:0, trans:'fade', tlen:0.5 }; S.clips.unshift(c); }
-  const set = async () => { c.dur = await realDuration(vid); c.a = 0; c.b = c.dur; renderClips(); };
+  const set = async () => { c.dur = await realDuration(vid); c.a = 0; c.b = c.dur; c.abuf = null; renderClips(); };
   if (vid.readyState >= 1) set(); else vid.addEventListener('loadedmetadata', set, { once:true });
 }
 function realDuration(v){
@@ -1745,14 +1727,14 @@ async function addClipFile(f){
   try {
     if (f.type.startsWith('image/')){
       const img = await loadImage(f);
-      S.clips.push({ id:'c' + (++clipSeq), kind:'image', name:f.name, el:img, photoDur:3, trans:'fade', tlen:0.5 });
+      S.clips.push({ id:'c' + (++clipSeq), kind:'image', name:f.name, el:img, photoDur:3, trans:'fade', tlen:0.5, rmbg:false });
     } else {
       const v = document.createElement('video'); v.playsInline = true; v.preload = 'auto'; v.className = 'hidden-video'; v.src = URL.createObjectURL(f); document.body.append(v);
       await new Promise((res, rej) => { v.onloadedmetadata = res; v.onerror = () => rej(new Error('Não consegui abrir ' + f.name + '.')); });
       const dur = await realDuration(v);
       if (!dur) throw new Error('Não consegui ler a duração de ' + f.name + '.');
       await seekTo(v, Math.min(0.1, dur / 2));
-      S.clips.push({ id:'c' + (++clipSeq), kind:'video', name:f.name, el:v, dur, a:0, b:dur, trans:'fade', tlen:0.5 });
+      S.clips.push({ id:'c' + (++clipSeq), kind:'video', name:f.name, el:v, file:f, dur, a:0, b:dur, trans:'fade', tlen:0.5, rmbg:false });
     }
     renderClips();
   } catch (e) { setMsg('#tlInfo', e.message, 'err'); }
@@ -1799,6 +1781,12 @@ function renderClips(){
       row.append(numField('Termina em (s)', c.id + '-b', c.b, 0.2, c.dur, 0.1, v => { c.b = Math.max(v, c.a + 0.2); }));
     }
     f.append(row);
+    if (c.kind !== 'avatar'){
+      const lb = document.createElement('label'); lb.style.cssText = 'flex-direction:row;align-items:center;gap:8px';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.id = c.id + '-rm'; cb.checked = !!c.rmbg;
+      cb.addEventListener('change', () => { c.rmbg = cb.checked; if (cb.checked) getClipSeg().catch(() => setMsg('#tlInfo', 'Não consegui carregar o recorte de fundo. Confira a internet.', 'err')); });
+      lb.append(cb, document.createTextNode('Remover o fundo (usa o fundo escolhido no passo 6)')); f.append(lb);
+    }
     if (i < S.clips.length - 1){
       const r2 = document.createElement('div'); r2.className = 'row';
       const l = document.createElement('label'); l.textContent = 'Transição para o próximo';
@@ -1821,11 +1809,45 @@ const tl = $('#tlCanvas'), tlx = tl.getContext('2d');
 const bufA = document.createElement('canvas'), bufB = document.createElement('canvas');
 [bufA, bufB].forEach(c => { c.width = OUT_W; c.height = OUT_H; });
 const bA = bufA.getContext('2d'), bB = bufB.getContext('2d');
+let clipSeg = null, clipSegLoading = null;
+function getClipSeg(){
+  if (clipSeg) return Promise.resolve(clipSeg);
+  if (!clipSegLoading) clipSegLoading = (async () => {
+    const { ImageSegmenter, FilesetResolver } = await import(MP);
+    const fs = await FilesetResolver.forVisionTasks(MP + '/wasm');
+    const mk = d => ImageSegmenter.createFromOptions(fs, { baseOptions:{ modelAssetPath: SEG_MODEL, delegate: d }, runningMode:'IMAGE', outputCategoryMask:false, outputConfidenceMasks:true });
+    try { clipSeg = await mk('GPU'); } catch { clipSeg = await mk('CPU'); }
+    return clipSeg;
+  })().catch(e => { clipSegLoading = null; throw e; });
+  return clipSegLoading;
+}
+const cutFr = document.createElement('canvas'); cutFr.width = OUT_W; cutFr.height = OUT_H; const cutFx = cutFr.getContext('2d');
+const cutMk = document.createElement('canvas'); const cutMx = cutMk.getContext('2d');
+const clipBg = document.createElement('canvas'); clipBg.width = OUT_W; clipBg.height = OUT_H;
+function drawWithoutBg(ctx){
+  if (!clipSeg){ ctx.drawImage(cutFr, 0, 0); return; }
+  let r; try { r = clipSeg.segment(cutFr); } catch { ctx.drawImage(cutFr, 0, 0); return; }
+  const ms = r.confidenceMasks || [];
+  if (!ms.length){ r.close?.(); ctx.drawImage(cutFr, 0, 0); return; }
+  const m = ms[0], w = m.width, h = m.height, d = m.getAsFloat32Array(), inv = ms.length > 1;
+  if (cutMk.width !== w || cutMk.height !== h){ cutMk.width = w; cutMk.height = h; }
+  const id = cutMx.createImageData(w, h);
+  for (let i = 0; i < w * h; i++){ let v = inv ? 1 - d[i] : d[i]; v = (v - 0.25) / 0.5; id.data[i * 4 + 3] = (v < 0 ? 0 : v > 1 ? 1 : v) * 255; }
+  if (r.close) r.close(); else ms.forEach(x => x.close());
+  cutMx.putImageData(id, 0, 0);
+  if (S.bg === 'original' || S.bg === 'desfocado'){ paintTheme(clipBg.getContext('2d'), 'floresta', OUT_W, OUT_H); ctx.drawImage(clipBg, 0, 0); }
+  else ctx.drawImage(bgCache, 0, 0);
+  cutFx.globalCompositeOperation = 'destination-in'; cutFx.imageSmoothingEnabled = true; cutFx.drawImage(cutMk, 0, 0, OUT_W, OUT_H); cutFx.globalCompositeOperation = 'source-over';
+  ctx.drawImage(cutFr, 0, 0);
+}
 function drawClip(ctx, it, lt){
   const c = it.c; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, OUT_W, OUT_H);
-  if (c.kind === 'avatar'){ renderFrame(); ctx.drawImage(out, 0, 0); }
-  else if (c.kind === 'video'){ const v = c.el; if (v.readyState >= 2){ const [x, y, w, h] = cover(v.videoWidth, v.videoHeight, OUT_W, OUT_H); ctx.drawImage(v, x, y, w, h); } }
-  else { const im = c.el, k = 1 + 0.07 * Math.min(1, lt / it.len); const [x, y, w, h] = cover(im.naturalWidth, im.naturalHeight, OUT_W, OUT_H); ctx.drawImage(im, OUT_W / 2 + (x - OUT_W / 2) * k, OUT_H / 2 + (y - OUT_H / 2) * k, w * k, h * k); }
+  if (c.kind === 'avatar'){ renderFrame(); ctx.drawImage(out, 0, 0); return; }
+  const g = c.rmbg ? cutFx : ctx;
+  if (c.rmbg) g.clearRect(0, 0, OUT_W, OUT_H);
+  if (c.kind === 'video'){ const v = c.el; if (v.readyState >= 2){ const [x, y, w, h] = cover(v.videoWidth, v.videoHeight, OUT_W, OUT_H); g.drawImage(v, x, y, w, h); } }
+  else { const im = c.el, k = 1 + 0.07 * Math.min(1, lt / it.len); const [x, y, w, h] = cover(im.naturalWidth, im.naturalHeight, OUT_W, OUT_H); g.drawImage(im, OUT_W / 2 + (x - OUT_W / 2) * k, OUT_H / 2 + (y - OUT_H / 2) * k, w * k, h * k); }
+  if (c.rmbg) drawWithoutBg(ctx);
 }
 function compose(ctx, kind, p){
   p = smooth(p);
@@ -1845,7 +1867,8 @@ async function runTimeline(record, onProgress){
   S.spk.gain.value = record ? 0 : 1;
   S.exporting = true; vid.pause();
   try { for (const it of P) if (it.c.kind !== 'image'){ it.c.el.muted = false; try { await it.c.el.play(); } catch {} it.c.el.pause(); } } catch {}
-  if (P.some(it => it.c.kind === 'avatar') && needsSeg()) await getSegmenter();
+  if (P.some(it => it.c.kind === 'avatar') && needsSeg()) await getSegmenter().catch(() => {});
+  if (P.some(it => it.c.rmbg)) await getClipSeg().catch(() => {});
   await document.fonts.load('900 60px Montserrat').catch(() => {});
   for (const it of P) if (it.c.kind !== 'image') await seekTo(it.c.el, it.c.a);
   const run = { stop:false }; tlRun = run;
@@ -1887,6 +1910,98 @@ async function runTimeline(record, onProgress){
   await new Promise(r => setTimeout(r, 250)); rec.stop(); await stopped;
   const type = rec.mimeType || mime || 'video/webm';
   return { blob: new Blob(parts, { type }), type };
+}
+/* exportação quadro a quadro: cada quadro é desenhado com calma e gravado com tempo exato, então o vídeo sai liso */
+let muxLib = null;
+function getMuxer(){
+  if (window.Mp4Muxer) return Promise.resolve(window.Mp4Muxer);
+  if (!muxLib) muxLib = new Promise((res, rej) => {
+    const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.1/build/mp4-muxer.js';
+    sc.onload = () => res(window.Mp4Muxer); sc.onerror = () => { muxLib = null; rej(new Error('Não consegui carregar o gravador de vídeo. Confira a internet.')); };
+    document.head.append(sc);
+  });
+  return muxLib;
+}
+async function pickVideoCodec(){
+  if (!window.VideoEncoder) return null;
+  for (const codec of ['avc1.640028', 'avc1.4D4028', 'avc1.42E028', 'avc1.42E01F']){
+    const cfg = { codec, width: OUT_W, height: OUT_H, bitrate: 6_000_000, framerate: 30 };
+    try { if ((await VideoEncoder.isConfigSupported(cfg)).supported) return cfg; } catch {}
+  }
+  return null;
+}
+async function pickAudioCodec(){
+  if (!window.AudioEncoder) return null;
+  for (const [codec, mux] of [['mp4a.40.2', 'aac'], ['opus', 'opus']]){
+    const cfg = { codec, sampleRate: 48000, numberOfChannels: 2, bitrate: 128000 };
+    try { if ((await AudioEncoder.isConfigSupported(cfg)).supported) return { cfg, mux }; } catch {}
+  }
+  return null;
+}
+async function mixAudio(P, total){
+  const SR = 48000, oac = new OfflineAudioContext(2, Math.max(1, Math.ceil(total * SR)), SR);
+  let any = false;
+  for (let i = 0; i < P.length; i++){
+    const it = P[i], c = it.c; if (c.kind === 'image') continue;
+    const file = c.kind === 'avatar' ? (S.finalFile || S.srcFile) : c.file; if (!file) continue;
+    if (c.abuf === undefined || c.abuf === null || c.abufFile !== file){ try { c.abuf = await oac.decodeAudioData(await file.arrayBuffer()); } catch { c.abuf = false; } c.abufFile = file; }
+    if (!c.abuf) continue; any = true;
+    const src = oac.createBufferSource(), g = oac.createGain(); src.buffer = c.abuf; src.connect(g); g.connect(oac.destination);
+    const inT = i > 0 ? P[i - 1].T : 0, T = it.T;
+    g.gain.setValueAtTime(inT ? 0 : 1, it.s); if (inT) g.gain.linearRampToValueAtTime(1, it.s + inT);
+    if (T){ g.gain.setValueAtTime(1, it.s + it.len - T); g.gain.linearRampToValueAtTime(0, it.s + it.len); }
+    src.start(it.s, c.a || 0, it.len);
+  }
+  return any ? await oac.startRendering() : null;
+}
+async function exportOffline(onProgress){
+  const vcfg = await pickVideoCodec(); if (!vcfg) return null;
+  const { P, total } = plan();
+  if (!P.length) throw new Error('Não há nada para montar. Escolha o vídeo no passo 1 ou 6.');
+  const M = await getMuxer(), acodec = await pickAudioCodec();
+  S.exporting = true; vid.pause(); P.forEach(it => { if (it.c.kind !== 'image') it.c.el.pause(); });
+  try {
+    if (P.some(it => it.c.kind === 'avatar') && needsSeg()) await getSegmenter().catch(() => onProgress(0, 'O recorte de fundo não carregou; o vídeo sai sem recorte.'));
+    if (P.some(it => it.c.rmbg)) await getClipSeg().catch(() => {});
+    await document.fonts.load('900 60px Montserrat').catch(() => {});
+    onProgress(0, 'Preparando o som…');
+    const audio = acodec ? await mixAudio(P, total) : null;
+    const target = new M.ArrayBufferTarget();
+    const muxer = new M.Muxer({ target, video:{ codec:'avc', width: OUT_W, height: OUT_H, frameRate: 30 },
+      audio: audio ? { codec: acodec.mux, numberOfChannels: 2, sampleRate: 48000 } : undefined, fastStart:'in-memory', firstTimestampBehavior:'offset' });
+    let encErr = null;
+    if (audio){
+      const aenc = new AudioEncoder({ output: (ch, meta) => muxer.addAudioChunk(ch, meta), error: e => encErr = e });
+      aenc.configure(acodec.cfg);
+      const L = audio.getChannelData(0), R = audio.numberOfChannels > 1 ? audio.getChannelData(1) : L, N = audio.length, step = 4800;
+      for (let i = 0; i < N; i += step){
+        const n = Math.min(step, N - i), data = new Float32Array(n * 2); data.set(L.subarray(i, i + n), 0); data.set(R.subarray(i, i + n), n);
+        const ad = new AudioData({ format:'f32-planar', sampleRate: 48000, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round(i / 48000 * 1e6), data });
+        aenc.encode(ad); ad.close();
+      }
+      await aenc.flush(); aenc.close();
+    }
+    const venc = new VideoEncoder({ output: (ch, meta) => muxer.addVideoChunk(ch, meta), error: e => encErr = e });
+    venc.configure(vcfg);
+    const FPS = 30, NF = Math.max(1, Math.round(total * FPS));
+    for (let f = 0; f < NF; f++){
+      if (encErr) throw encErr;
+      if (S.cancelExport) throw new Error('Exportação cancelada.');
+      const t = f / FPS, act = P.filter(it => t >= it.s && t < it.s + it.len);
+      for (const it of act) if (it.c.kind !== 'image') await seekTo(it.c.el, Math.max(0, Math.min(it.c.a + (t - it.s), it.c.b - 0.034)));
+      try {
+        if (act.length >= 2){ const [A, B] = act; drawClip(bA, A, t - A.s); drawClip(bB, B, t - B.s); compose(tlx, A.c.trans, A.T ? (t - B.s) / A.T : 1); }
+        else if (act.length === 1) drawClip(tlx, act[0], t - act[0].s);
+      } catch (e) { console.warn('quadro com erro', e); }
+      const vf = new VideoFrame(tl, { timestamp: Math.round(f * 1e6 / FPS), duration: Math.round(1e6 / FPS) });
+      venc.encode(vf, { keyFrame: f % 60 === 0 }); vf.close();
+      while (venc.encodeQueueSize > 4) await new Promise(r => setTimeout(r, 5));
+      if (f % 3 === 0){ onProgress(f / NF); await new Promise(r => setTimeout(r, 0)); }
+    }
+    await venc.flush(); venc.close(); muxer.finalize();
+    if (encErr) throw encErr;
+    return { blob: new Blob([target.buffer], { type:'video/mp4' }), type:'video/mp4' };
+  } finally { S.exporting = false; }
 }
 $('#btnTlPlay').addEventListener('click', async () => {
   if (tlRun){ tlRun.stop = true; return; }
@@ -2058,7 +2173,14 @@ $('#btnExport').addEventListener('click', async () => {
   try{
     try { lock = await navigator.wakeLock?.request('screen'); } catch {}
     setMsg('#expMsg','Preparando…'); setBar('#expBar', 0);
-    const res = await runTimeline(true, p => { setBar('#expBar', p); $('#expMsg').textContent = `Gravando… ${Math.round(p * 100)}%. Não saia do app.`; });
+    let res = null;
+    try {
+      res = await exportOffline((p, m) => { setBar('#expBar', p); $('#expMsg').textContent = m || `Montando o vídeo quadro a quadro… ${Math.round(p * 100)}%. Pode demorar um pouco, mas o vídeo sai liso. Não saia do app.`; });
+    } catch (e) { if (/cancelada/.test(e.message)) throw e; console.warn('exportação quadro a quadro falhou', e); res = null; }
+    if (!res){
+      setMsg('#expMsg', 'Este navegador não monta quadro a quadro. Gravando em tempo real…');
+      res = await runTimeline(true, p => { setBar('#expBar', p); $('#expMsg').textContent = `Gravando… ${Math.round(p * 100)}%. Não saia do app.`; });
+    }
     const type = res.type, ext = type.includes('mp4') ? 'mp4' : 'webm', blob = res.blob;
     S.resultFile = new File([blob], `estudio-avatar-${Date.now()}.${ext}`, { type: type.split(';')[0] });
     const url = URL.createObjectURL(blob);
