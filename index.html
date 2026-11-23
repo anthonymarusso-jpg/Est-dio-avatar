@@ -106,6 +106,17 @@ video.thumb{max-height:320px}
 .layer .acts{display:flex;gap:4px}
 .layer .acts button{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:8px;min-width:34px;min-height:34px;cursor:pointer;font:600 14px var(--f-ui)}
 #preview{touch-action:none;cursor:grab}
+.apptabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.apptabs button{appearance:none;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);border-radius:10px;padding:9px 8px;font:700 14px var(--f-ui);cursor:pointer}
+.apptabs button[aria-selected=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.scene{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;grid-template-columns:72px 1fr;gap:10px;align-items:start}
+.scene .bgthumb{width:72px;aspect-ratio:9/16;border-radius:8px;background:#000 center/cover no-repeat;border:1px solid var(--line)}
+.scene .f{display:flex;flex-direction:column;gap:8px;min-width:0}
+.scene textarea{min-height:70px}
+.scene .row>*{flex:1 1 110px}
+.avatars{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.avatars img{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:10px;border:2px solid transparent;cursor:pointer;background:#000}
+.avatars img[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 10px rgba(56,242,224,.5)}
 .clips{display:flex;flex-direction:column;gap:8px}
 .clip{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:start}
 .clip canvas{width:64px;height:114px;border-radius:8px;background:#000}
@@ -132,6 +143,10 @@ details[open] summary{margin-bottom:10px}
 <header>
   <div class="wrap">
     <div class="brand"><h1>Estúdio <span>Avatar</span></h1><small id="engine">Do avatar ao TikTok</small></div>
+    <div class="apptabs" role="tablist">
+      <button type="button" id="tabFlow" aria-selected="true">Passo a passo</button>
+      <button type="button" id="tabModel" aria-selected="false">Criar com modelo</button>
+    </div>
     <nav class="trail" aria-label="Progresso">
       <a href="#s1" data-t="1" aria-label="Passo 1"></a><a href="#s2" data-t="2" aria-label="Passo 2"></a><a href="#s3" data-t="3" aria-label="Passo 3"></a><a href="#s4" data-t="4" aria-label="Passo 4"></a><a href="#s5" data-t="5" aria-label="Passo 5"></a><a href="#s6" data-t="6" aria-label="Passo 6"></a><a href="#s7" data-t="7" aria-label="Passo 7"></a><a href="#s8" data-t="8" aria-label="Passo 8"></a>
     </nav>
@@ -139,6 +154,7 @@ details[open] summary{margin-bottom:10px}
 </header>
 
 <main><div class="wrap">
+<div id="flowTab" style="display:flex;flex-direction:column;gap:14px">
 
 <!-- 1 -->
 <section class="step" id="s1">
@@ -469,6 +485,79 @@ details[open] summary{margin-bottom:10px}
   <div class="msg" id="shareMsg"></div>
 </section>
 
+</div>
+<div id="modelTab" hidden style="display:flex;flex-direction:column;gap:14px">
+
+<section class="step" id="m1">
+  <div class="step-h"><div class="num">1</div><h2>Vídeo modelo e tema</h2></div>
+  <p>Envie um vídeo que você quer usar de modelo e diga o tema do vídeo novo. O Gemini assiste ao modelo, entende as cenas, o ritmo e os textos, e escreve um roteiro novo no mesmo formato. Sem tema, ele só reescreve o texto com outras palavras.</p>
+  <div class="file"><b>Escolher o vídeo modelo</b><br><span id="mFileName">Até uns 3 minutos</span><input id="mFile" type="file" accept="video/*"></div>
+  <label>Tema do vídeo novo
+    <textarea id="mTheme" style="min-height:70px" placeholder="ex.: dicas para economizar na conta de luz, contadas por uma repórter animada"></textarea>
+  </label>
+  <button class="btn primary" id="btnAnalyze">Analisar e criar o roteiro</button>
+  <div class="bar" id="mBar" hidden><i></i></div>
+  <div class="msg" id="mMsg"></div>
+  <div class="clips" id="sceneList"></div>
+</section>
+
+<section class="step" id="m2">
+  <div class="step-h"><div class="num">2</div><h2>Avatar de IA</h2></div>
+  <p>Crie um avatar de pessoa ou de pet com IA (grátis) ou use uma foto sua. Funciona melhor de frente, com o rosto bem visível.</p>
+  <div class="row">
+    <label>Tipo <select id="mAvType"><option value="pessoa">Pessoa</option><option value="pet">Pet</option></select></label>
+    <label>Estilo <select id="mAvStyle"><option value="foto realista">Foto realista</option><option value="3D estilo animação">3D animação</option><option value="desenho animado">Desenho</option></select></label>
+  </div>
+  <label>Como ele é
+    <input id="mAvDesc" type="text" placeholder="ex.: repórter jovem de cabelo cacheado, blazer azul / golden retriever sorridente">
+  </label>
+  <div class="row">
+    <button class="btn primary" id="btnAvGen">Criar avatar com IA</button>
+    <div class="file" style="padding:10px"><b>Usar minha foto</b><input id="mAvUpload" type="file" accept="image/*"></div>
+  </div>
+  <div class="msg" id="mAvMsg"></div>
+  <div class="avatars" id="avList"></div>
+</section>
+
+<section class="step" id="m3">
+  <div class="step-h"><div class="num">3</div><h2>Voz</h2></div>
+  <p>Gera a voz do roteiro inteiro com a voz escolhida no passo 4 do Passo a passo (Fish Audio). Ou envie um áudio pronto.</p>
+  <div class="row">
+    <button class="btn primary" id="btnMVoice">Gerar a voz do roteiro</button>
+    <div class="file" style="padding:10px"><b>Enviar áudio</b><input id="mVoiceUpload" type="file" accept="audio/*"></div>
+  </div>
+  <div class="msg" id="mVoiceMsg"></div>
+  <audio id="mVoice" controls hidden></audio>
+</section>
+
+<section class="step" id="m4">
+  <div class="step-h"><div class="num">4</div><h2>Fazer o avatar falar</h2><span class="tag">DreamFace</span></div>
+  <p>A DreamAvatar 3.0, do DreamFace, junta a foto do avatar com a voz e cria o vídeo com a boca e as expressões sincronizadas. É paga por segundo, no saldo da sua conta DreamAPI: cerca de 2 créditos por segundo em 480p. <span id="mCost"></span></p>
+  <label style="flex-direction:row;align-items:flex-start;gap:8px;font-weight:400"><input id="mOk" type="checkbox" style="margin-top:3px"> Confirmo que o avatar foi criado por IA ou é meu, e não é uma pessoa real conhecida.</label>
+  <div class="row">
+    <button class="btn primary" id="btnMDream">Animar com o DreamFace</button>
+    <button class="btn" id="btnMFree">Animar grátis (mais simples)</button>
+  </div>
+  <div class="bar" id="mDreamBar" hidden><i></i></div>
+  <div class="msg" id="mDreamMsg"></div>
+  <video id="mTalk" class="thumb" controls playsinline hidden></video>
+  <details>
+    <summary>Chave da DreamAPI</summary>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+      <p>Crie a chave no painel da DreamAPI, em <b>API Keys</b>. Ela fica salva só neste aparelho. Nunca cole a chave em conversas.</p>
+      <a class="btn" href="https://api.newportai.com/" target="_blank" rel="noopener">Abrir a DreamAPI</a>
+      <label>Chave <input id="mDreamKey" type="password" placeholder="sk-…" autocomplete="off"></label>
+    </div>
+  </details>
+</section>
+
+<section class="step" id="m5">
+  <div class="step-h"><div class="num">5</div><h2>Montar o vídeo</h2></div>
+  <p>Leva tudo para a edição: o avatar falando sem fundo, um cenário para cada cena, os textos na tela e as legendas. Lá você confere a prévia, ajusta e exporta no passo 8.</p>
+  <button class="btn primary" id="btnMBuild">Montar e abrir na edição</button>
+  <div class="msg" id="mBuildMsg"></div>
+</section>
+</div>
 </div></main>
 
 <video id="work" class="hidden-video" playsinline preload="auto"></video>
@@ -492,7 +581,7 @@ function bindSaved(id, key, ev='input'){
   if (v != null){ if (el.type==='checkbox') el.checked = v; else el.value = v; }
   el.addEventListener(ev, () => store.set(key, el.type==='checkbox' ? el.checked : el.value));
 }
-['#giphyKey:giphyKey','#dreamKey:dreamKey','#ghToken:ghToken','#ghRepo:ghRepo','#gemKey:gemKey','#asrEngine:asrEngine','#fishKey:fishKey','#voiceId:voiceId','#fishModel:fishModel','#speed:speed','#asrModel:asrModel2','#transcript:transcript','#rewritten:rewritten','#postText:postText','#capWords:capWords','#capColor:capColor','#capPos:capPos','#capSize:capSize','#capUpper:capUpper','#scale:scale','#offsetY:offsetY','#bgColor:bgColor']
+['#mTheme:mTheme','#mAvDesc:mAvDesc','#giphyKey:giphyKey','#mDreamKey:dreamKey','#dreamKey:dreamKey','#ghToken:ghToken','#ghRepo:ghRepo','#gemKey:gemKey','#asrEngine:asrEngine','#fishKey:fishKey','#voiceId:voiceId','#fishModel:fishModel','#speed:speed','#asrModel:asrModel2','#transcript:transcript','#rewritten:rewritten','#postText:postText','#capWords:capWords','#capColor:capColor','#capPos:capPos','#capSize:capSize','#capUpper:capUpper','#scale:scale','#offsetY:offsetY','#bgColor:bgColor']
   .forEach(p => { const [id,k] = p.split(':'); bindSaved(id, k, (id==='#capUpper'||id==='#asrEngine'||id.includes('Model')||id==='#capWords'||id==='#capColor') ? 'change' : 'input'); });
 
 const S = {
@@ -1133,7 +1222,7 @@ function dreamCostHint(){
 }
 $('#srcVideo').addEventListener('loadedmetadata', dreamCostHint);
 async function dreamPost(path, body){
-  const key = $('#dreamKey').value.trim();
+  const key = ($('#mDreamKey').value.trim() || $('#dreamKey').value.trim());
   let r;
   try { r = await fetch(DREAM + path, { method:'POST', headers:{ 'Authorization':'Bearer ' + key, 'Content-Type':'application/json' }, body: JSON.stringify(body) }); }
   catch { throw new Error('Sem conexão com a DreamAPI. Confira a internet.'); }
@@ -1419,7 +1508,12 @@ function renderFrame(){
 }
 const olC = document.createElement('canvas'); olC.width = OUT_W; olC.height = OUT_H; const olctx = olC.getContext('2d');
 /* "Sem fundo": quadriculado na prévia; no vídeo exportado vira verde (chroma) porque MP4 não guarda transparência */
-function paintBgInto(ctx){ if (S.bg === 'nada' && S.exporting){ ctx.fillStyle = '#00b140'; ctx.fillRect(0, 0, OUT_W, OUT_H); } else ctx.drawImage(bgCache, 0, 0); }
+function paintBgInto(ctx){
+  if (S.scenes && S.scenes.length){
+    const t = vid.currentTime || 0, sc = S.scenes.find(x => t >= x.t0 && t < x.t1) || S.scenes[S.scenes.length - 1];
+    if (sc && sc.img){ const iw = sc.img.naturalWidth || sc.img.width, ih = sc.img.naturalHeight || sc.img.height; const [x, y, w, h] = cover(iw, ih, OUT_W, OUT_H); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, OUT_W, OUT_H); ctx.drawImage(sc.img, x, y, w, h); return; }
+  }
+  if (S.bg === 'nada' && S.exporting){ ctx.fillStyle = '#00b140'; ctx.fillRect(0, 0, OUT_W, OUT_H); } else ctx.drawImage(bgCache, 0, 0); }
 function drawPerson(){
   if (vid.readyState < 2) return;
   const [x,y,w,h] = personRect();
@@ -2219,6 +2313,222 @@ $('#btnShare').addEventListener('click', async () => {
     try { await navigator.share({ files:[f], text }); setMsg('#shareMsg', text ? 'Escolha o TikTok. A legenda do post foi copiada, é só colar.' : 'Escolha o TikTok na lista.', 'ok'); }
     catch (e) { if (e.name !== 'AbortError') setMsg('#shareMsg','Não deu para compartilhar. Baixe o vídeo e poste pelo app do TikTok.','err'); }
   } else setMsg('#shareMsg','Este navegador não compartilha vídeos. Toque em Baixar vídeo e poste pelo app do TikTok.','err');
+});
+
+/* ---------- aba "Criar com modelo" ---------- */
+const MD = { file:null, scenes:[], avatar:null, voice:null, talk:null };
+function showTab(model){
+  $('#flowTab').hidden = model; $('#modelTab').hidden = !model;
+  $('#flowTab').style.display = model ? 'none' : 'flex'; $('#modelTab').style.display = model ? 'flex' : 'none';
+  $('#tabFlow').setAttribute('aria-selected', !model); $('#tabModel').setAttribute('aria-selected', model);
+  document.querySelector('.trail').style.visibility = model ? 'hidden' : 'visible';
+  window.scrollTo({ top: 0 });
+}
+$('#tabFlow').addEventListener('click', () => showTab(false));
+$('#tabModel').addEventListener('click', () => showTab(true));
+$('#modelTab').style.display = 'none';
+$('#mFile').addEventListener('change', e => { const f = e.target.files[0]; if (!f) return; MD.file = f; $('#mFileName').textContent = f.name; });
+const blockReal = t => NO_POLITICS.test(t);
+function sceneFala(){ return MD.scenes.map(s => s.fala.trim()).filter(Boolean).join(' '); }
+/* 1. análise do modelo com o Gemini */
+async function videoFrames(file, n){
+  const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.src = URL.createObjectURL(file);
+  await new Promise((res, rej) => { v.onloadedmetadata = res; v.onerror = () => rej(new Error('Não consegui abrir o vídeo modelo.')); });
+  const dur = await realDuration(v), out = [], c = document.createElement('canvas'), sc = Math.min(1, 512 / Math.max(v.videoWidth, v.videoHeight));
+  c.width = Math.round(v.videoWidth * sc); c.height = Math.round(v.videoHeight * sc);
+  for (let i = 0; i < n; i++){ await seekTo(v, dur * (i + 0.5) / n); c.getContext('2d').drawImage(v, 0, 0, c.width, c.height); out.push({ t: dur * (i + 0.5) / n, b64: c.toDataURL('image/jpeg', 0.7).split(',')[1] }); }
+  return { dur, frames: out };
+}
+$('#btnAnalyze').addEventListener('click', async () => {
+  if (!MD.file) return setMsg('#mMsg', 'Escolha o vídeo modelo primeiro.', 'err');
+  const theme = $('#mTheme').value.trim();
+  if (blockReal(theme)) return setMsg('#mMsg', 'Não crio vídeos com políticos ou pessoas reais conhecidas falando. Mude o tema.', 'err');
+  const b = $('#btnAnalyze'); b.disabled = true; setBar('#mBar', 0.1);
+  try {
+    setMsg('#mMsg', 'Lendo o vídeo modelo…');
+    const { dur, frames } = await videoFrames(MD.file, 8);
+    let audio = null; try { audio = await decodeAudio(MD.file); } catch {}
+    setBar('#mBar', 0.35); setMsg('#mMsg', 'O Gemini está assistindo ao modelo e escrevendo o roteiro novo…');
+    const parts = frames.map(f => ({ inline_data:{ mime_type:'image/jpeg', data: f.b64 } }));
+    if (audio && audio.length / 16000 < 540) parts.push({ inline_data:{ mime_type:'audio/wav', data: wavBase64(audio) } });
+    parts.push({ text: `As imagens são quadros em ordem de um vídeo curto de ${dur.toFixed(1)} segundos (um a cada ${(dur / 8).toFixed(1)} s) e o áudio é a fala dele. Entenda como o vídeo é montado: divisão em cenas, tempo de cada cena, ritmo, o que aparece no fundo, os textos na tela e o tom da fala.
+Depois crie um vídeo NOVO com a mesma estrutura (mesmo número de cenas, tempos parecidos, mesmo ritmo e mesmo estilo de texto na tela). ${theme ? 'Tema do vídeo novo: ' + theme + '.' : 'Mantenha o mesmo assunto, mas com outras palavras e outros cenários.'}
+Regras: falas em português do Brasil, naturais, para uma única pessoa falar olhando para a câmera. Não use nomes de pessoas reais e não atribua falas a pessoas reais. Os cenários não devem ter pessoas reais conhecidas.
+Responda só JSON: {"estilo":"resumo curto do formato","cenas":[{"inicio":0,"fim":4.5,"fala":"o que o avatar fala nessa cena","cenario":"descrição visual do fundo, em português","texto_tela":"texto curto na tela ou vazio"}]}` });
+    const out = await gemini(parts, true);
+    let j; try { j = JSON.parse(out.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim()); } catch { throw new Error('O Gemini respondeu num formato inesperado. Tente de novo.'); }
+    const cenas = (j.cenas || []).filter(c => c && (c.fala || c.cenario));
+    if (!cenas.length) throw new Error('O Gemini não conseguiu dividir o vídeo em cenas. Tente de novo.');
+    MD.scenes = cenas.map(c => ({ fala: String(c.fala || ''), cenario: String(c.cenario || ''), texto: String(c.texto_tela || ''), dur: Math.max(1, toSec(c.fim) - toSec(c.inicio)), img: null }));
+    renderScenes();
+    setMsg('#mMsg', `${MD.scenes.length} cenas criadas${j.estilo ? ' · ' + j.estilo : ''}. Revise as falas, gere os cenários e siga para o avatar.`, 'ok');
+  } catch (e) { setMsg('#mMsg', e.message || String(e), 'err'); }
+  setBar('#mBar', null); b.disabled = false;
+});
+/* cenários: imagem por IA (grátis, Pollinations) ou foto livre */
+let lastGen = 0;
+async function genImage(promptPt, w, h, onMsg){
+  if (blockReal(promptPt)) throw new Error('Não gero imagens de políticos ou pessoas reais conhecidas.');
+  const wait = 46000 - (Date.now() - lastGen);
+  for (let left = wait; left > 0; left -= 1000){ onMsg?.(`A IA grátis libera uma imagem a cada 45 segundos. Faltam ${Math.ceil(left / 1000)} s…`); await new Promise(r => setTimeout(r, 1000)); }
+  lastGen = Date.now(); onMsg?.('Criando a imagem…');
+  const en = await toEnglish(promptPt);
+  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(en)}?width=${w}&height=${h}&seed=${Math.floor(Math.random() * 1e6)}&nologo=true&safe=true`;
+  const img = await loadURL(url).catch(() => { throw new Error('A IA de imagens não respondeu agora. Tente de novo em 1 minuto.'); });
+  img.dataset.src = url; return img;
+}
+function renderScenes(){
+  const box = $('#sceneList'); box.innerHTML = '';
+  MD.scenes.forEach((sc, i) => {
+    const card = document.createElement('div'); card.className = 'scene';
+    const th = document.createElement('div'); th.className = 'bgthumb'; if (sc.img) th.style.backgroundImage = `url("${sc.img.src}")`;
+    const f = document.createElement('div'); f.className = 'f';
+    const t = document.createElement('b'); t.textContent = `Cena ${i + 1} · ${sc.dur.toFixed(1).replace('.', ',')} s`;
+    const fl = document.createElement('label'); fl.textContent = 'Fala'; const ta = document.createElement('textarea'); ta.id = 'sc-f-' + i; ta.value = sc.fala; ta.addEventListener('input', () => sc.fala = ta.value); fl.append(ta);
+    const cl = document.createElement('label'); cl.textContent = 'Cenário'; const ci = document.createElement('input'); ci.type = 'text'; ci.id = 'sc-c-' + i; ci.value = sc.cenario; ci.addEventListener('input', () => sc.cenario = ci.value); cl.append(ci);
+    const tl2 = document.createElement('label'); tl2.textContent = 'Texto na tela'; const ti = document.createElement('input'); ti.type = 'text'; ti.id = 'sc-t-' + i; ti.value = sc.texto; ti.addEventListener('input', () => sc.texto = ti.value); tl2.append(ti);
+    const msg = document.createElement('div'); msg.className = 'msg';
+    const row = document.createElement('div'); row.className = 'row';
+    const mk = (txt, fn) => { const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn'; bt.textContent = txt; bt.addEventListener('click', async () => { bt.disabled = true; try { await fn(); } catch (e) { msg.textContent = e.message; msg.className = 'msg err'; } bt.disabled = false; }); row.append(bt); };
+    mk('Criar cenário com IA', async () => { sc.img = await genImage(sc.cenario + ', vertical background scene, no people, no text, detailed, high quality', 432, 768, m => { msg.textContent = m; msg.className = 'msg'; }); th.style.backgroundImage = `url("${sc.img.src}")`; msg.textContent = 'Cenário pronto.'; msg.className = 'msg ok'; });
+    mk('Buscar foto', async () => {
+      msg.textContent = 'Buscando…'; msg.className = 'msg';
+      const j = await (await fetch('https://api.openverse.org/v1/images/?page_size=8&mature=false&q=' + encodeURIComponent(await toEnglish(sc.cenario)))).json();
+      const it = (j.results || []).find(x => x.thumbnail); if (!it) throw new Error('Nenhuma foto encontrada. Mude a descrição do cenário.');
+      sc.img = await loadURL(it.thumbnail); th.style.backgroundImage = `url("${sc.img.src}")`; msg.textContent = `Foto de ${it.creator || 'autor desconhecido'} (${(it.license || '').toUpperCase()}).`; msg.className = 'msg ok';
+    });
+    const up = document.createElement('div'); up.className = 'file'; up.style.padding = '8px'; up.innerHTML = '<b>Minha imagem</b>';
+    const ui = document.createElement('input'); ui.type = 'file'; ui.accept = 'image/*'; ui.addEventListener('change', async () => { const file = ui.files[0]; if (!file) return; sc.img = await loadImage(file); th.style.backgroundImage = `url("${sc.img.src}")`; }); up.append(ui); row.append(up);
+    f.append(t, fl, cl, tl2, row, msg); card.append(th, f); box.append(card);
+  });
+}
+/* 2. avatar */
+function setAvatar(img, blob){
+  MD.avatar = { img, blob, url: img.dataset.src || null };
+  document.querySelectorAll('#avList img').forEach(x => x.setAttribute('aria-pressed', x === img));
+}
+$('#btnAvGen').addEventListener('click', async () => {
+  const desc = $('#mAvDesc').value.trim(); if (!desc) return setMsg('#mAvMsg', 'Descreva como o avatar é.', 'err');
+  const type = $('#mAvType').value, style = $('#mAvStyle').value;
+  const prompt = type === 'pet'
+    ? `${style}, retrato de um pet: ${desc}, olhando para a câmera, de frente, boca fechada, corpo até o peito, fundo liso neutro, iluminação suave`
+    : `${style}, retrato de uma pessoa fictícia: ${desc}, olhando para a câmera, de frente, boca fechada, da cintura para cima, fundo liso neutro, iluminação de estúdio`;
+  const b = $('#btnAvGen'); b.disabled = true;
+  try {
+    const img = await genImage(prompt, 432, 768, m => setMsg('#mAvMsg', m));
+    img.addEventListener('click', () => setAvatar(img, null)); $('#avList').prepend(img); setAvatar(img, null);
+    setMsg('#mAvMsg', 'Avatar criado. Toque em outro para trocar, ou crie mais um.', 'ok');
+  } catch (e) { setMsg('#mAvMsg', e.message, 'err'); }
+  b.disabled = false;
+});
+$('#mAvUpload').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const img = await loadImage(f); img.addEventListener('click', () => setAvatar(img, f)); $('#avList').prepend(img); setAvatar(img, f);
+  setMsg('#mAvMsg', 'Foto escolhida.', 'ok');
+});
+async function avatarBlob(){
+  if (!MD.avatar) throw new Error('Crie ou escolha um avatar no passo 2.');
+  if (MD.avatar.blob) return MD.avatar.blob;
+  const c = document.createElement('canvas'), im = MD.avatar.img; c.width = im.naturalWidth; c.height = im.naturalHeight; c.getContext('2d').drawImage(im, 0, 0);
+  return await new Promise((res, rej) => { try { c.toBlob(b => b ? res(b) : rej(new Error('Não consegui preparar a imagem do avatar.')), 'image/png'); } catch { rej(new Error('Não consegui usar essa imagem. Salve o avatar e envie como "Usar minha foto".')); } });
+}
+/* 3. voz: usa o gerador do passo 4 */
+function waitMsg(sel){ return new Promise(res => { const el = $(sel); const ob = new MutationObserver(() => { if (/\b(ok|err)\b/.test(el.className)){ ob.disconnect(); res(el.className.includes('ok')); } }); ob.observe(el, { attributes:true, childList:true, characterData:true, subtree:true }); }); }
+$('#btnMVoice').addEventListener('click', async () => {
+  const text = sceneFala(); if (!text) return setMsg('#mVoiceMsg', 'Crie o roteiro no passo 1 primeiro.', 'err');
+  $('#rewritten').value = text; store.set('rewritten', text);
+  setMsg('#mVoiceMsg', 'Gerando a voz…'); const w = waitMsg('#ttsMsg'); $('#ttsMsg').className = 'msg'; $('#btnTTS').click();
+  const ok = await w;
+  if (ok && S.ttsBlob){ MD.voice = new File([S.ttsBlob], 'voz.mp3', { type:'audio/mpeg' }); const a = $('#mVoice'); a.src = URL.createObjectURL(MD.voice); a.hidden = false; setMsg('#mVoiceMsg', 'Voz pronta.', 'ok'); costHint(); }
+  else setMsg('#mVoiceMsg', $('#ttsMsg').textContent + ' (configure a voz e as chaves no passo 4 do Passo a passo)', 'err');
+});
+$('#mVoiceUpload').addEventListener('change', e => { const f = e.target.files[0]; if (!f) return; MD.voice = f; const a = $('#mVoice'); a.src = URL.createObjectURL(f); a.hidden = false; setMsg('#mVoiceMsg', 'Áudio escolhido.', 'ok'); costHint(); });
+function costHint(){ const a = $('#mVoice'); a.onloadedmetadata = () => { if (isFinite(a.duration)) $('#mCost').textContent = `Esta voz tem ${Math.round(a.duration)} s: uns ${Math.round(a.duration * 2)} créditos.`; }; }
+/* 4. avatar falando */
+function showTalk(file){ MD.talk = file; const v = $('#mTalk'); v.src = URL.createObjectURL(file); v.hidden = false; }
+$('#btnMDream').addEventListener('click', async () => {
+  if (!$('#mOk').checked) return setMsg('#mDreamMsg', 'Marque a confirmação de que o avatar é de IA ou seu.', 'err');
+  if (!MD.voice) return setMsg('#mDreamMsg', 'Gere ou envie a voz no passo 3.', 'err');
+  if (!($('#mDreamKey').value.trim() || $('#dreamKey').value.trim())) return setMsg('#mDreamMsg', 'Coloque a chave da DreamAPI logo abaixo.', 'err');
+  const b = $('#btnMDream'); b.disabled = true; setBar('#mDreamBar', 0.05);
+  try {
+    const blob = await avatarBlob();
+    setMsg('#mDreamMsg', 'Enviando a foto…'); const imageUrl = await dreamUpload(new File([blob], 'avatar.png', { type: blob.type || 'image/png' }), 'a imagem');
+    setBar('#mDreamBar', 0.2); setMsg('#mDreamMsg', 'Enviando a voz…'); const audioUrl = await dreamUpload(MD.voice, 'o áudio');
+    setBar('#mDreamBar', 0.3); setMsg('#mDreamMsg', 'Pedindo o vídeo ao DreamFace…');
+    const isPet = $('#mAvType').value === 'pet';
+    const task = await dreamPost('/async/dreamavatar/image_to_video/3.0fast', { image: imageUrl, audio: audioUrl, resolution: '480p',
+      prompt: isPet ? 'The pet talks naturally to the camera, mouth synced with the speech, small natural head movements.' : 'The person talks naturally to the camera with friendly expressions, lips synced with the speech, small natural head movements.' });
+    if (!task.taskId) throw new Error('O DreamFace não devolveu o número da tarefa.');
+    const t0 = Date.now(); let url = '';
+    while (Date.now() - t0 < 20 * 60000){
+      await new Promise(r => setTimeout(r, 6000));
+      const sec = Math.floor((Date.now() - t0) / 1000);
+      setMsg('#mDreamMsg', `O DreamFace está animando o avatar… ${Math.floor(sec / 60)}min ${sec % 60}s. Pode levar alguns minutos.`);
+      setBar('#mDreamBar', 0.3 + 0.65 * (1 - Math.exp(-sec / 150)));
+      const r = await dreamPost('/getAsyncResult', { taskId: task.taskId }).catch(() => null);
+      if (!r) continue;
+      if (r.task?.status === 4) throw new Error('O DreamFace não conseguiu animar: ' + (r.task?.reason || 'motivo não informado') + '.');
+      if (r.task?.status === 3){ url = r.videos?.[0]?.videoUrl || ''; break; }
+    }
+    if (!url) throw new Error('Demorou demais. Tente de novo mais tarde.');
+    let file;
+    try { const bl = await (await fetch(url)).blob(); file = new File([bl], 'avatar-falando.mp4', { type: 'video/mp4' }); }
+    catch { $('#mTalk').src = url; $('#mTalk').hidden = false; throw new Error('O vídeo ficou pronto, mas não consegui trazer para o app. Toque nos três pontos do vídeo, baixe e escolha no passo 6 do Passo a passo.'); }
+    showTalk(file); setMsg('#mDreamMsg', 'Avatar falando pronto! Siga para o passo 5.', 'ok');
+  } catch (e) { setMsg('#mDreamMsg', e.message || String(e), 'err'); }
+  setBar('#mDreamBar', null); b.disabled = false;
+});
+$('#btnMFree').addEventListener('click', async () => {
+  if (!$('#mOk').checked) return setMsg('#mDreamMsg', 'Marque a confirmação de que o avatar é de IA ou seu.', 'err');
+  if (!MD.voice) return setMsg('#mDreamMsg', 'Gere ou envie a voz no passo 3.', 'err');
+  try {
+    const blob = await avatarBlob();
+    talkPhotoFile = new File([blob], 'avatar.png', { type: blob.type || 'image/png' }); talkBase = null; dreamAudioFile = MD.voice; $('#dreamOk').checked = true;
+    setMsg('#mDreamMsg', 'Animando no aparelho… (funciona com rostos de pessoas)');
+    const w = waitMsg('#talkMsg'); $('#talkMsg').className = 'msg'; $('#btnTalk').click();
+    const ok = await w;
+    if (ok && S.finalFile){ showTalk(S.finalFile); setMsg('#mDreamMsg', 'Pronto! Siga para o passo 5.', 'ok'); }
+    else setMsg('#mDreamMsg', $('#talkMsg').textContent, 'err');
+  } catch (e) { setMsg('#mDreamMsg', e.message, 'err'); }
+});
+/* 5. montar: leva para a edição com cenários por cena, textos e legendas */
+function textCanvas(text){
+  const c = document.createElement('canvas'), g = c.getContext('2d'), size = 58, maxW = 620;
+  g.font = `900 ${size}px Montserrat, "Arial Black", Arial, sans-serif`;
+  const words = text.toLocaleUpperCase('pt-BR').split(/\s+/), lines = [''];
+  words.forEach(w => { const tryL = lines[lines.length - 1] ? lines[lines.length - 1] + ' ' + w : w; if (g.measureText(tryL).width > maxW && lines[lines.length - 1]) lines.push(w); else lines[lines.length - 1] = tryL; });
+  c.width = 680; c.height = Math.round(lines.length * size * 1.2 + 44);
+  g.font = `900 ${size}px Montserrat, "Arial Black", Arial, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+  g.fillStyle = 'rgba(0,0,0,.55)'; g.beginPath(); g.roundRect(0, 0, c.width, c.height, 26); g.fill();
+  lines.forEach((l, i) => { const y = 22 + size * 0.6 + i * size * 1.2; g.lineWidth = 10; g.strokeStyle = '#000'; g.strokeText(l, c.width / 2, y); g.fillStyle = '#fff'; g.fillText(l, c.width / 2, y); });
+  return c;
+}
+$('#btnMBuild').addEventListener('click', async () => {
+  if (!MD.talk) return setMsg('#mBuildMsg', 'Faça o avatar falar no passo 4 primeiro.', 'err');
+  if (!MD.scenes.length) return setMsg('#mBuildMsg', 'Crie o roteiro no passo 1 primeiro.', 'err');
+  const b = $('#btnMBuild'); b.disabled = true;
+  try {
+    setMsg('#mBuildMsg', 'Montando…');
+    S.finalFile = MD.talk; $('#finalName').textContent = 'Avatar falando (Criar com modelo)'; loadWorkVideo(MD.talk); clearCaptions();
+    $('#rmBg').checked = true;
+    const roteiro = sceneFala(); $('#rewritten').value = roteiro; store.set('rewritten', roteiro);
+    const words = await alignWords(MD.talk, roteiro);
+    let k = 0; const scenes = [];
+    MD.scenes.forEach((sc, i) => {
+      const n = sc.fala.split(/\s+/).filter(Boolean).length, first = words[k], last = words[Math.min(words.length - 1, k + Math.max(1, n) - 1)];
+      scenes.push({ t0: i === 0 ? 0 : (first ? first.s : 0), t1: last ? last.e : 0, img: sc.img, texto: sc.texto }); k += n;
+    });
+    for (let i = 0; i < scenes.length; i++){ if (i < scenes.length - 1) scenes[i].t1 = scenes[i + 1].t0; else scenes[i].t1 = 1e9; }
+    S.scenes = scenes.filter(x => x.img).length ? scenes : null;
+    S.layers = S.layers.filter(L => !L.fromModel);
+    scenes.forEach(sc => { if (sc.texto.trim()) addLayer(textCanvas(sc.texto.trim()), 'Texto: ' + sc.texto.trim().slice(0, 24), { s: 0.85, y: OUT_H * 0.17, t0: sc.t0, t1: sc.t1 < 1e8 ? sc.t1 : null, fromModel: true }); });
+    S.words = words; rebuildCaptions(); markDone(7);
+    showTab(false); markDone(5); markDone(6);
+    setTimeout(() => $('#s6').scrollIntoView({ behavior:'smooth' }), 300);
+    setMsg('#mBuildMsg', 'Pronto! Abri a edição no passo 6. Confira a prévia e exporte no passo 8.', 'ok');
+  } catch (e) { setMsg('#mBuildMsg', e.message || String(e), 'err'); }
+  b.disabled = false;
 });
 
 /* ---------- esporos de fundo ---------- */
