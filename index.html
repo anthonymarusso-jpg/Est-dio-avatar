@@ -29,7 +29,7 @@ body{background:var(--bg) radial-gradient(120% 60% at 15% 100%,#06303a 0%,transp
   padding-bottom:calc(48px + env(safe-area-inset-bottom,0px))}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:20}
 .wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-header{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bg);background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bg);border-bottom:1px solid var(--line)}
 #spores{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
 main{position:relative;z-index:1}
 header .wrap{padding-block:12px;display:flex;flex-direction:column;gap:8px}
@@ -41,7 +41,7 @@ header .wrap{padding-block:12px;display:flex;flex-direction:column;gap:8px}
 .trail a{height:6px;border-radius:3px;background:var(--line);display:block}
 .trail a.done{background:linear-gradient(90deg,var(--accent),var(--accent-2));box-shadow:0 0 8px rgba(56,242,224,.7)}
 main .wrap{display:flex;flex-direction:column;gap:14px;padding-block:16px}
-.step{background:var(--panel);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:inset 0 1px 0 rgba(56,242,224,.08);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;scroll-margin-top:96px}
+.step{background:#08202c;box-shadow:inset 0 1px 0 rgba(56,242,224,.08);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;scroll-margin-top:96px}
 .step-h{display:flex;align-items:center;gap:12px}
 .num{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:500 13px var(--f-mono);border:1.5px solid var(--line);color:var(--muted)}
 .step.done .num{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);box-shadow:0 0 14px rgba(56,242,224,.65)}
@@ -424,8 +424,11 @@ details[open] summary{margin-bottom:10px}
 <!-- 7 -->
 <section class="step" id="s7">
   <div class="step-h"><div class="num">7</div><h2>Legendas</h2></div>
-  <p>O app ouve o vídeo final e cria as legendas no tempo certo da fala. Dá para corrigir cada linha.</p>
-  <button class="btn primary" id="btnCaps" disabled>Gerar legendas</button>
+  <p>O app usa o texto novo do passo 3 e acerta o tempo de cada palavra pela voz do vídeo. Rápido e sem internet. Se não tiver texto no passo 3, ele ouve o vídeo e transcreve.</p>
+  <div class="row">
+    <button class="btn primary" id="btnCaps" disabled>Gerar legendas</button>
+    <button class="btn" id="btnCapsListen" disabled>Ouvir o vídeo e legendar</button>
+  </div>
   <div class="bar" id="capBar" hidden><i></i></div>
   <div class="msg" id="capMsg"></div>
   <div class="row">
@@ -658,11 +661,17 @@ async function transcribeGemini(file, barId, msgId){
     const out = await gemini([{ inline_data:{ mime_type:'audio/wav', data: wavBase64(audio) } }, { text: prompt }], true);
     let j; try { j = JSON.parse(out.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim()); } catch { j = { text: out, segments: [] }; }
     let chunks = (Array.isArray(j.segments) ? j.segments : []).filter(x => x && x.text)
-      .map(x => ({ timestamp:[Math.max(0, Number(x.start) || 0), Math.min(dur, Number(x.end) || 0)], text: ' ' + String(x.text).trim() }));
+      .map(x => ({ timestamp:[Math.max(0, toSec(x.start)), Math.min(dur, toSec(x.end))], text: ' ' + String(x.text).trim() }));
     const text = (j.text || chunks.map(c => c.text).join('')).trim();
     if (!chunks.length || chunks.some(c => !(c.timestamp[1] > c.timestamp[0]))) chunks = [{ timestamp:[0, dur], text: ' ' + text }];
     return { text, chunks };
   } finally { clearInterval(timer); setBar(barId, null); }
+}
+function toSec(v){
+  if (typeof v === 'number') return v;
+  const p = String(v || '').replace(',', '.').split(':').map(Number);
+  if (p.some(x => !isFinite(x))) return 0;
+  return p.reduce((a, x) => a * 60 + x, 0);
 }
 function runTranscribe(file, barId, msgId){
   return $('#asrEngine').value === 'gemini' ? transcribeGemini(file, barId, msgId) : transcribe(file, barId, msgId);
@@ -1051,29 +1060,51 @@ async function getPhotoSeg(delegate){
   return photoSegs[delegate];
 }
 /* remove o fundo de qualquer imagem: primeiro com o @imgly/background-removal (roda no aparelho), depois MediaPipe */
-let imglyMod = null;
-async function cutPerson(src, onMsg){
+const BG_WORKER = `
+let mod = null;
+onmessage = async (e) => {
   try {
-    onMsg?.('Baixando o removedor de fundo (só na primeira vez, uns 40 MB)…');
-    if (!imglyMod) imglyMod = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm');
+    if (!mod) mod = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm');
+    const out = await mod.removeBackground(e.data.blob, { model:'isnet_quint8', output:{ format:'image/png' },
+      progress: (k, cur, tot) => { if (tot) postMessage({ type:'progress', p: cur / tot }); } });
+    postMessage({ type:'done', blob: out });
+  } catch (err) { postMessage({ type:'error', msg: String(err && err.message || err) }); }
+};`;
+let bgWorker = null;
+function removeBgInWorker(blob, onMsg){
+  if (!bgWorker) bgWorker = new Worker(URL.createObjectURL(new Blob([BG_WORKER], { type:'text/javascript' })), { type:'module' });
+  return new Promise((res, rej) => {
+    const to = setTimeout(() => { bgWorker.terminate(); bgWorker = null; rej(new Error('demorou demais')); }, 180000);
+    bgWorker.onmessage = ({ data:d }) => {
+      if (d.type === 'progress') onMsg?.(`Baixando o removedor de fundo (só na primeira vez)… ${Math.round(d.p * 100)}%`);
+      else if (d.type === 'done'){ clearTimeout(to); res(d.blob); }
+      else { clearTimeout(to); rej(new Error(d.msg)); }
+    };
+    bgWorker.onerror = e => { clearTimeout(to); bgWorker = null; rej(new Error(e.message || 'erro no removedor')); };
+    bgWorker.postMessage({ blob });
+  });
+}
+async function cutPerson(src, onMsg){
+  S.heavy = true;
+  try {
+    onMsg?.('Preparando o removedor de fundo…');
     const iw = src.naturalWidth || src.width, ih = src.naturalHeight || src.height;
-    const sc = Math.min(1, 2048 / Math.max(iw, ih)), c = document.createElement('canvas');
+    const sc = Math.min(1, 1280 / Math.max(iw, ih)), c = document.createElement('canvas');
     c.width = Math.max(1, Math.round(iw * sc)); c.height = Math.max(1, Math.round(ih * sc)); c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
     const blob = await new Promise(r => c.toBlob(r, 'image/png'));
-    const outBlob = await imglyMod.removeBackground(blob, { model:'isnet_quint8', output:{ format:'image/png' },
-      progress: (k, cur, tot) => { if (tot) onMsg?.(`Baixando o removedor de fundo… ${Math.round(cur / tot * 100)}%`); } });
-    onMsg?.('Recortando…');
+    const outBlob = await removeBgInWorker(blob, onMsg);
+    onMsg?.('Quase pronto…');
     const bmp = await createImageBitmap(outBlob), oc = document.createElement('canvas'); oc.width = bmp.width; oc.height = bmp.height; oc.getContext('2d').drawImage(bmp, 0, 0);
     return oc;
   } catch (e) {
     console.warn('imgly falhou, usando MediaPipe', e);
     onMsg?.('Usando o recorte de pessoas…');
     return cutPersonMP(src);
-  }
+  } finally { S.heavy = false; }
 }
 async function cutPersonMP(src){
   const iw = src.naturalWidth || src.width, ih = src.naturalHeight || src.height;
-  const sc = Math.min(1, 2048 / Math.max(iw, ih)), W = Math.max(1, Math.round(iw * sc)), H = Math.max(1, Math.round(ih * sc));
+  const sc = Math.min(1, 1280 / Math.max(iw, ih)), W = Math.max(1, Math.round(iw * sc)), H = Math.max(1, Math.round(ih * sc));
   const work = document.createElement('canvas'); work.width = W; work.height = H; work.getContext('2d').drawImage(src, 0, 0, W, H);
   let lastErr = null;
   for (const delegate of ['GPU', 'CPU']){
@@ -1198,7 +1229,7 @@ function loadWorkVideo(file){
   vid.src = URL.createObjectURL(file);
   vid.onloadeddata = () => { vid.currentTime = 0.05; };
   vid.onseeked = () => { if (!S.playing && !S.exporting) renderFrame(); if (needsSeg()) getSegmenter().catch(()=>{}); };
-  $('#btnPlay').disabled = false; $('#btnCaps').disabled = false;
+  $('#btnPlay').disabled = false; $('#btnCaps').disabled = false; $('#btnCapsListen').disabled = false;
   ensureAvatarClip();
 }
 $('#finalInput').addEventListener('change', e => {
@@ -1323,13 +1354,15 @@ function getSegmenter(){
   })().catch(e => { segLoading = null; setMsg('#segMsg','Não consegui carregar o recorte de fundo. Confira a internet e tente de novo.','err'); throw e; });
   return segLoading;
 }
-let lastMaskT = -1;
+let lastMaskT = -1, segSkip = 0, segEvery = 1, segCost = 0;
 function updateMask(){
   if (!segmenter || vid.readyState < 2) return false;
   if (vid.paused && maskData && vid.currentTime === lastMaskT) return true;
+  if (!vid.paused && maskData && ++segSkip < segEvery) return true;
+  segSkip = 0;
   lastMaskT = vid.currentTime;
   let ts = performance.now(); if (ts <= lastTs) ts = lastTs + 1; lastTs = ts;
-  let r;
+  let r; const c0 = performance.now();
   try { r = segmenter.segmentForVideo(vid, ts); segFails = 0; }
   catch { if (++segFails === 5) switchToCpu(); return false; }
   const masks = r.confidenceMasks || [];
@@ -1345,6 +1378,8 @@ function updateMask(){
   }
   mctx.putImageData(maskData, 0, 0);
   if (r.close) r.close(); else masks.forEach(x => x.close());
+  segCost = segCost * 0.8 + (performance.now() - c0) * 0.2;
+  segEvery = segCost > 40 ? 3 : segCost > 22 ? 2 : 1;
   return true;
 }
 function renderFrame(){
@@ -1374,12 +1409,12 @@ function drawPerson(){
   pctx.imageSmoothingEnabled = true; pctx.drawImage(maskC, x, y, w, h);
   pctx.globalCompositeOperation = 'source-over';
   if ($('#olOn').checked){
-    const r = Number($('#olWidth').value);
-    olctx.globalCompositeOperation = 'source-over'; olctx.clearRect(0, 0, OUT_W, OUT_H);
-    for (let k = 0; k < 16; k++){ const a = k / 16 * Math.PI * 2; olctx.drawImage(person, Math.cos(a) * r, Math.sin(a) * r); }
-    olctx.globalCompositeOperation = 'source-in'; olctx.fillStyle = $('#olColor').value; olctx.fillRect(0, 0, OUT_W, OUT_H);
+    const r = Number($('#olWidth').value) / 2, HW = OUT_W / 2, HH = OUT_H / 2;
+    olctx.globalCompositeOperation = 'source-over'; olctx.clearRect(0, 0, HW, HH);
+    for (let k = 0; k < 8; k++){ const a = k / 8 * Math.PI * 2; olctx.drawImage(person, Math.cos(a) * r, Math.sin(a) * r, HW, HH); }
+    olctx.globalCompositeOperation = 'source-in'; olctx.fillStyle = $('#olColor').value; olctx.fillRect(0, 0, HW, HH);
     olctx.globalCompositeOperation = 'source-over';
-    octx.drawImage(olC, 0, 0);
+    octx.drawImage(olC, 0, 0, HW, HH, 0, 0, OUT_W, OUT_H);
   }
   octx.drawImage(person, 0, 0);
 }
@@ -1876,7 +1911,7 @@ function buildCaptions(chunks, dur, n){
   });
   return res;
 }
-function clearCaptions(){ S.captions = []; S.chunks = []; store.set('captions', []); store.set('chunks', []); renderCapList(); markDone(7, false); }
+function clearCaptions(){ S.captions = []; S.chunks = []; S.words = null; store.set('captions', []); store.set('chunks', []); renderCapList(); markDone(7, false); }
 function fmt(t){ const m = Math.floor(t/60), s = (t%60).toFixed(1).padStart(4,'0'); return `${m}:${s}`; }
 function renderCapList(){
   const box = $('#capList'); box.innerHTML = '';
@@ -1888,23 +1923,69 @@ function renderCapList(){
     row.append(code, inp); box.append(row);
   });
 }
-$('#btnCaps').addEventListener('click', async () => {
-  const f = S.finalFile || S.srcFile; if (!f) return;
-  const b = $('#btnCaps'); b.disabled = true;
+/* tempo de cada palavra: espalha o texto pelos trechos em que há voz no áudio */
+async function alignWords(file, text){
+  const audio = await decodeAudio(file), sr = 16000, hop = 320, n = Math.floor(audio.length / hop);
+  if (!n) throw new Error('O vídeo não tem áudio.');
+  const e = new Float32Array(n);
+  for (let i = 0; i < n; i++){ let s2 = 0; for (let j = i * hop; j < (i + 1) * hop; j++) s2 += audio[j] * audio[j]; e[i] = Math.sqrt(s2 / hop); }
+  const sorted = Array.from(e).sort((a, b) => a - b), thr = Math.max(sorted[Math.floor(n * 0.2)] * 2.5, sorted[Math.floor(n * 0.95)] * 0.12, 0.004);
+  const segs = []; let st = -1;
+  for (let i = 0; i <= n; i++){ const on = i < n && e[i] > thr; if (on && st < 0) st = i; if (!on && st >= 0){ segs.push([st * hop / sr, i * hop / sr]); st = -1; } }
+  const merged = [];
+  segs.forEach(sg => { const l = merged[merged.length - 1]; if (l && sg[0] - l[1] < 0.25) l[1] = sg[1]; else merged.push([...sg]); });
+  const voiced = merged.filter(sg => sg[1] - sg[0] > 0.08);
+  const total = voiced.reduce((a, sg) => a + sg[1] - sg[0], 0);
+  const dur = audio.length / sr, words = text.split(/\s+/).filter(Boolean);
+  if (!words.length) throw new Error('O texto está vazio.');
+  const at = frac => {
+    if (!voiced.length || total < 0.2) return frac * dur;
+    let left = frac * total;
+    for (const [a, b] of voiced){ if (left <= b - a) return a + left; left -= b - a; }
+    return voiced[voiced.length - 1][1];
+  };
+  const weights = words.map(w => w.length + 1 + (/[.!?…]$/.test(w) ? 3 : /[,;:]$/.test(w) ? 1.5 : 0)), sum = weights.reduce((a, b) => a + b, 0);
+  let acc = 0;
+  return words.map((w, i) => { const s0 = at(acc / sum); acc += weights[i]; return { w, s: s0, e: at((acc - (weights[i] - w.length - 1)) / sum) }; });
+}
+function captionsFromWords(words, n){
+  const out = [];
+  for (let i = 0; i < words.length; i += n){
+    const g = words.slice(i, i + n), next = words[i + n];
+    out.push({ start: g[0].s, end: next ? Math.max(g[g.length - 1].e, next.s - 0.01) : g[g.length - 1].e + 0.3, text: g.map(x => x.w).join(' ') });
+  }
+  return out;
+}
+function rebuildCaptions(){
+  const n = Number($('#capWords').value);
+  if (S.words && S.words.length) S.captions = captionsFromWords(S.words, n);
+  else if (S.chunks.length) S.captions = buildCaptions(S.chunks, vid.duration, n);
+  else return;
+  store.set('captions', S.captions); renderCapList(); if (!S.playing && !S.exporting) renderFrame();
+}
+async function makeCaptions(listen){
+  const f = S.finalFile || S.srcFile; if (!f) return setMsg('#capMsg', 'Escolha o vídeo no passo 6 primeiro.', 'err');
+  const text = $('#rewritten').value.trim();
+  const b1 = $('#btnCaps'), b2 = $('#btnCapsListen'); b1.disabled = b2.disabled = true;
   try{
-    const r = await runTranscribe(f, '#capBar', '#capMsg');
-    S.chunks = r.chunks; store.set('chunks', S.chunks);
-    S.captions = buildCaptions(S.chunks, vid.duration, Number($('#capWords').value)); store.set('captions', S.captions);
-    renderCapList(); renderFrame();
-    if (!$('#postText').value.trim()) $('#postText').value = r.text.trim().split(/[.!?](\s|$)/)[0].slice(0,140);
-    setMsg('#capMsg', `${S.captions.length} legendas criadas. Toque em qualquer uma para corrigir.`, 'ok'); markDone(7);
-  }catch(e){ setMsg('#capMsg', e.message, 'err'); }
-  b.disabled = false;
-});
-$('#capWords').addEventListener('change', () => {
-  if (!S.chunks.length) return;
-  S.captions = buildCaptions(S.chunks, vid.duration, Number($('#capWords').value)); store.set('captions', S.captions); renderCapList(); if (!S.playing) renderFrame();
-});
+    if (!listen && text){
+      setMsg('#capMsg', 'Acertando o tempo de cada palavra…'); setBar('#capBar', 0.3);
+      S.words = await alignWords(f, text); S.chunks = []; store.set('chunks', []);
+      if (!$('#postText').value.trim()) $('#postText').value = text.split(/[.!?](\s|$)/)[0].slice(0, 140);
+    } else {
+      const r = await runTranscribe(f, '#capBar', '#capMsg');
+      S.words = null; S.chunks = r.chunks; store.set('chunks', S.chunks);
+      if (!$('#postText').value.trim()) $('#postText').value = r.text.trim().split(/[.!?](\s|$)/)[0].slice(0,140);
+    }
+    rebuildCaptions();
+    if (!S.captions.length) throw new Error('Nenhuma fala encontrada no vídeo.');
+    setMsg('#capMsg', `${S.captions.length} legendas criadas. Toque em ▶ Prévia no passo 6 para ver. Dá para corrigir cada linha.`, 'ok'); markDone(7);
+  }catch(e){ setMsg('#capMsg', 'Não consegui legendar: ' + (e.message || e), 'err'); }
+  setBar('#capBar', null); b1.disabled = b2.disabled = false;
+}
+$('#btnCaps').addEventListener('click', () => makeCaptions(false));
+$('#btnCapsListen').addEventListener('click', () => makeCaptions(true));
+$('#capWords').addEventListener('change', rebuildCaptions);
 ['#capColor','#capPos','#capSize','#capUpper'].forEach(id => $(id).addEventListener('input', () => { if (!S.playing && !S.exporting) renderFrame(); }));
 
 function drawCaption(t){
@@ -2006,7 +2087,8 @@ $('#btnShare').addEventListener('click', async () => {
   const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let W = 0, H = 0, dpr = Math.min(2, window.devicePixelRatio || 1), P = [];
   function size(){ W = innerWidth; H = innerHeight; c.width = W*dpr; c.height = H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); }
-  function seed(){ P = Array.from({length: 38}, () => ({ x:Math.random()*W, y:Math.random()*H, r:1+Math.random()*2.6, vy:-(0.08+Math.random()*0.25), ph:Math.random()*6.28, hue:Math.random()<0.75 ? '56,242,224' : '180,107,255' })); }
+  const weak = (navigator.hardwareConcurrency || 4) <= 4 || (navigator.deviceMemory || 4) <= 3;
+  function seed(){ P = Array.from({length: weak ? 12 : 22}, () => ({ x:Math.random()*W, y:Math.random()*H, r:1+Math.random()*2.6, vy:-(0.08+Math.random()*0.25), ph:Math.random()*6.28, hue:Math.random()<0.75 ? '56,242,224' : '180,107,255' })); }
   function draw(t){
     ctx.clearRect(0,0,W,H);
     for (const p of P){
@@ -2015,9 +2097,11 @@ $('#btnShare').addEventListener('click', async () => {
       ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p.x,p.y,p.r*5,0,Math.PI*2); ctx.fill();
     }
   }
+  let last = 0;
   function tick(t){
-    if (!document.hidden && !S.exporting && !S.playing && !S.busy){
-      for (const p of P){ p.y += p.vy; p.x += Math.sin(t/2000 + p.ph)*0.15; if (p.y < -20){ p.y = H + 20; p.x = Math.random()*W; } }
+    if (t - last > 50 && !document.hidden && !S.exporting && !S.playing && !S.busy && !S.heavy){
+      last = t;
+      for (const p of P){ p.y += p.vy * 3; p.x += Math.sin(t/2000 + p.ph)*0.45; if (p.y < -20){ p.y = H + 20; p.x = Math.random()*W; } }
       draw(t);
     }
     requestAnimationFrame(tick);
