@@ -89,6 +89,23 @@ video.thumb{max-height:320px}
 .voice .play{min-height:36px;padding:6px 10px}
 .voice>div{min-width:0}
 .caps{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow:auto;padding-right:4px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.tabs button{flex:none;appearance:none;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);border-radius:999px;padding:8px 12px;font:600 13px var(--f-ui);cursor:pointer}
+.tabs button[aria-selected=true]{color:var(--accent-ink);background:var(--accent);border-color:var(--accent)}
+.pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:6px;max-height:250px;overflow:auto}
+.pick button{appearance:none;aspect-ratio:1;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:6px;cursor:pointer;display:grid;place-items:center;min-width:0}
+.pick button img,.pick button canvas{max-width:100%;max-height:100%;object-fit:contain}
+.pick.photos{grid-template-columns:repeat(auto-fill,minmax(88px,1fr))}
+.pick.photos button{padding:0;overflow:hidden}
+.pick.photos img{width:100%;height:100%;object-fit:cover}
+.layers{display:flex;flex-direction:column;gap:6px}
+.layer{display:grid;grid-template-columns:40px 1fr auto;gap:8px;align-items:center;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:6px}
+.layer[aria-current=true]{border-color:var(--accent);box-shadow:0 0 10px rgba(56,242,224,.35)}
+.layer canvas{width:40px;height:40px;border-radius:6px;background:repeating-conic-gradient(#2a3440 0 25%,#1a2129 0 50%) 0 0/10px 10px}
+.layer span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.layer .acts{display:flex;gap:4px}
+.layer .acts button{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:8px;min-width:34px;min-height:34px;cursor:pointer;font:600 14px var(--f-ui)}
+#preview{touch-action:none;cursor:grab}
 .cap{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center}
 .cap code{font:500 12px var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
 .cap input{padding:8px 10px}
@@ -306,6 +323,53 @@ details[open] summary{margin-bottom:10px}
     <label>Tamanho da pessoa <input id="scale" type="range" min="0.6" max="1.5" step="0.01" value="1"></label>
     <label>Altura <input id="offsetY" type="range" min="-0.3" max="0.3" step="0.01" value="0"></label>
   </div>
+  <details id="outlineBox">
+    <summary>Contorno da pessoa</summary>
+    <div class="row" style="margin-top:8px">
+      <label style="flex-direction:row;align-items:center;gap:8px"><input id="olOn" type="checkbox"> Mostrar contorno</label>
+      <label>Cor <input id="olColor" type="color" value="#ffffff"></label>
+      <label>Espessura <input id="olWidth" type="range" min="2" max="28" step="1" value="10"></label>
+    </div>
+  </details>
+  <details id="layersBox" open>
+    <summary>Elementos: stickers, ícones, fotos, formas e suas imagens</summary>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+      <div class="tabs" role="tablist">
+        <button type="button" data-tab="tStick" aria-selected="true">Stickers</button>
+        <button type="button" data-tab="tIcon" aria-selected="false">Ícones</button>
+        <button type="button" data-tab="tPhoto" aria-selected="false">Fotos grátis</button>
+        <button type="button" data-tab="tShape" aria-selected="false">Formas</button>
+        <button type="button" data-tab="tMine" aria-selected="false">Minhas imagens</button>
+      </div>
+      <div id="tStick"><div class="pick" id="stickList"></div></div>
+      <div id="tIcon" hidden>
+        <div class="row"><input id="iconQ" type="text" placeholder="em inglês acha mais: fire, arrow, money" enterkeyhint="search"><button class="btn" id="btnIconQ" style="flex:0 0 auto">Buscar</button></div>
+        <div class="msg" id="iconMsg"></div>
+        <div class="pick" id="iconList"></div>
+      </div>
+      <div id="tPhoto" hidden>
+        <div class="row"><input id="photoQ" type="text" placeholder="em inglês acha mais: crowd, city, flag" enterkeyhint="search"><button class="btn" id="btnPhotoQ" style="flex:0 0 auto">Buscar</button></div>
+        <div class="msg" id="photoMsg">Fotos livres do Openverse, com licença Creative Commons.</div>
+        <div class="pick photos" id="photoList"></div>
+      </div>
+      <div id="tShape" hidden>
+        <label>Estilo <select id="shapeStyle"><option value="fill">Preenchida</option><option value="line">Só contorno</option></select></label>
+        <div class="pick" id="shapeList"></div>
+      </div>
+      <div id="tMine" hidden>
+        <div class="file"><b>Escolher imagens</b><br><span>PNG sem fundo fica melhor. Também dá para copiar uma imagem e colar aqui (Ctrl+V).</span><input id="mineInput" type="file" accept="image/*" multiple></div>
+      </div>
+      <label>Cor dos ícones e formas <input id="elColor" type="color" value="#ff2d55"></label>
+      <div class="msg" id="layerMsg">Na prévia, toque num elemento para escolher e arraste para mover. Com dois dedos, aumenta e gira. No computador, a rodinha do mouse muda o tamanho.</div>
+      <b style="font-size:13px;color:var(--muted)">Camadas (a de cima fica na frente)</b>
+      <div class="layers" id="layerList"></div>
+      <div class="row" id="selCtl" hidden>
+        <label>Tamanho <input id="elSize" type="range" min="0.05" max="2.5" step="0.01" value="0.4"></label>
+        <label>Giro <input id="elRot" type="range" min="-180" max="180" step="1" value="0"></label>
+        <label>Transparência <input id="elOp" type="range" min="0.1" max="1" step="0.05" value="1"></label>
+      </div>
+    </div>
+  </details>
   <div class="stage"><canvas id="preview" width="720" height="1280"></canvas></div>
   <div class="row">
     <button class="btn" id="btnPlay" disabled>▶ Prévia</button>
@@ -394,7 +458,8 @@ const S = {
   srcFile:null, finalFile:null, ttsBlob:null,
   chunks:[], captions:[], bg: store.get('bg', 'floresta'), bgImg:null,
   ac:null, srcNode:null, dest:null, spk:null, exporting:false, playing:false,
-  resultFile:null
+  resultFile:null,
+  layers:[{ id:'person', type:'person', name:'Pessoa do vídeo' }], sel:null
 };
 
 function setMsg(id, text, kind=''){ const el=$(id); el.textContent=text; el.className='msg'+(kind?' '+kind:''); }
@@ -1207,21 +1272,228 @@ function renderFrame(){
   } else {
     octx.drawImage(bgCache, 0, 0);
   }
-  if (vid.readyState >= 2){
-    const [x,y,w,h] = personRect();
-    if (!needsSeg()) octx.drawImage(vid, x, y, w, h);
-    else if (updateMask() || maskData){
-      pctx.globalCompositeOperation = 'source-over'; pctx.clearRect(0,0,OUT_W,OUT_H);
-      pctx.drawImage(vid, x, y, w, h);
-      pctx.globalCompositeOperation = 'destination-in';
-      pctx.imageSmoothingEnabled = true; pctx.drawImage(maskC, x, y, w, h);
-      pctx.globalCompositeOperation = 'source-over';
-      octx.drawImage(person, 0, 0);
-    }
-    else octx.drawImage(vid, x, y, w, h);
-  }
+  for (const L of S.layers){ if (L.type === 'person') drawPerson(); else drawLayer(octx, L); }
+  if (S.sel && !S.exporting) drawSelection(octx, S.sel);
   drawCaption(t);
 }
+const olC = document.createElement('canvas'); olC.width = OUT_W; olC.height = OUT_H; const olctx = olC.getContext('2d');
+function drawPerson(){
+  if (vid.readyState < 2) return;
+  const [x,y,w,h] = personRect();
+  if (!needsSeg()) { octx.drawImage(vid, x, y, w, h); return; }
+  if (!(updateMask() || maskData)) { octx.drawImage(vid, x, y, w, h); return; }
+  pctx.globalCompositeOperation = 'source-over'; pctx.clearRect(0,0,OUT_W,OUT_H);
+  pctx.drawImage(vid, x, y, w, h);
+  pctx.globalCompositeOperation = 'destination-in';
+  pctx.imageSmoothingEnabled = true; pctx.drawImage(maskC, x, y, w, h);
+  pctx.globalCompositeOperation = 'source-over';
+  if ($('#olOn').checked){
+    const r = Number($('#olWidth').value);
+    olctx.globalCompositeOperation = 'source-over'; olctx.clearRect(0, 0, OUT_W, OUT_H);
+    for (let k = 0; k < 16; k++){ const a = k / 16 * Math.PI * 2; olctx.drawImage(person, Math.cos(a) * r, Math.sin(a) * r); }
+    olctx.globalCompositeOperation = 'source-in'; olctx.fillStyle = $('#olColor').value; olctx.fillRect(0, 0, OUT_W, OUT_H);
+    olctx.globalCompositeOperation = 'source-over';
+    octx.drawImage(olC, 0, 0);
+  }
+  octx.drawImage(person, 0, 0);
+}
+function layerSize(L){ const iw = L.img.naturalWidth || L.img.width || 1, ih = L.img.naturalHeight || L.img.height || 1, w = OUT_W * L.s; return [w, w * ih / iw]; }
+function drawLayer(ctx, L){
+  if (!L.img) return;
+  const [w, h] = layerSize(L);
+  ctx.save(); ctx.globalAlpha = L.op; ctx.translate(L.x, L.y); ctx.rotate(L.rot * Math.PI / 180);
+  ctx.drawImage(L.img, -w / 2, -h / 2, w, h); ctx.restore();
+}
+function drawSelection(ctx, L){
+  if (L.type === 'person') return;
+  const [w, h] = layerSize(L);
+  ctx.save(); ctx.translate(L.x, L.y); ctx.rotate(L.rot * Math.PI / 180);
+  ctx.setLineDash([14, 10]); ctx.lineWidth = 4; ctx.strokeStyle = '#38f2e0'; ctx.strokeRect(-w / 2 - 6, -h / 2 - 6, w + 12, h + 12);
+  ctx.restore();
+}
+
+/* ---------- 6c. elementos: stickers, ícones, fotos, formas, imagens ---------- */
+const OM = 'https://cdn.jsdelivr.net/npm/openmoji@15.1.0/color/svg/';
+const EMOJIS = ['1F525','1F4A5','2B50','2764','1F4AF','1F44D','1F44F','1F64C','1F4AA','1F447','1F449','1F440','1F631','1F92F','1F602','1F60D','1F914','1F621','1F622','1F973','1F389','1F38A','1F4E2','1F4E3','1F6A8','26A0','2705','274C','2753','2757','1F4B0','1F4B8','1F4C8','1F4C9','1F3C6','1F451','1F1E7-1F1F7','1F30E','1F3DB','1F4F0','1F4FA','1F3A4','1F4F1','23F0','1F680'];
+const SHAPES = [['ret','Retângulo'],['circ','Círculo'],['estrela','Estrela'],['coracao','Coração'],['seta','Seta'],['balao','Balão de fala'],['tarja','Tarja'],['raio','Raio']];
+let layerSeq = 0;
+function redraw(){ if (!S.playing && !S.exporting) renderFrame(); }
+function loadURL(url){ return new Promise((res, rej) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => res(i); i.onerror = () => rej(new Error('Não consegui carregar essa imagem.')); i.src = url; }); }
+function rasterSquare(img, size = 512){ if (img.naturalWidth) return img; const c = document.createElement('canvas'); c.width = c.height = size; c.getContext('2d').drawImage(img, 0, 0, size, size); return c; }
+function addLayer(img, name, extra = {}){
+  const L = Object.assign({ id: 'L' + (++layerSeq), type:'img', name, img, x: OUT_W / 2, y: OUT_H * 0.38, s: 0.4, rot: 0, op: 1 }, extra);
+  S.layers.push(L); selectLayer(L); return L;
+}
+function selectLayer(L){
+  S.sel = L || null;
+  const c = $('#selCtl'); c.hidden = !L || L.type === 'person';
+  if (L && L.type !== 'person'){ $('#elSize').value = L.s; $('#elRot').value = L.rot; $('#elOp').value = L.op; }
+  renderLayerList(); redraw();
+}
+function renderLayerList(){
+  const box = $('#layerList'); box.innerHTML = '';
+  [...S.layers].reverse().forEach(L => {
+    const row = document.createElement('div'); row.className = 'layer'; row.setAttribute('aria-current', S.sel === L);
+    const th = document.createElement('canvas'); th.width = 80; th.height = 80; const tc = th.getContext('2d');
+    if (L.type === 'person'){ tc.fillStyle = '#16425a'; tc.fillRect(0,0,80,80); tc.fillStyle = '#38f2e0'; tc.beginPath(); tc.arc(40,30,14,0,7); tc.fill(); tc.fillRect(20,48,40,32); }
+    else if (L.img){ const iw = L.img.naturalWidth || L.img.width, ih = L.img.naturalHeight || L.img.height, k = Math.min(72 / iw, 72 / ih); tc.drawImage(L.img, 40 - iw * k / 2, 40 - ih * k / 2, iw * k, ih * k); }
+    const nm = document.createElement('span'); nm.textContent = L.name; nm.addEventListener('click', () => selectLayer(L));
+    const acts = document.createElement('div'); acts.className = 'acts';
+    const btn = (t, label, fn) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.setAttribute('aria-label', label); b.title = label; b.addEventListener('click', fn); acts.append(b); };
+    btn('↑', 'Trazer para frente', () => moveLayer(L, 1));
+    btn('↓', 'Mandar para trás', () => moveLayer(L, -1));
+    if (L.type !== 'person'){
+      btn('⧉', 'Duplicar', () => addLayer(L.img, L.name, { ...L, id: undefined, x: L.x + 30, y: L.y + 30 }));
+      btn('✕', 'Apagar', () => { S.layers = S.layers.filter(x => x !== L); selectLayer(null); });
+    }
+    row.append(th, nm, acts); box.append(row);
+  });
+}
+function moveLayer(L, dir){
+  const i = S.layers.indexOf(L), j = i + dir; if (j < 0 || j >= S.layers.length) return;
+  [S.layers[i], S.layers[j]] = [S.layers[j], S.layers[i]]; renderLayerList(); redraw();
+}
+['#elSize','#elRot','#elOp'].forEach(id => $(id).addEventListener('input', () => {
+  const L = S.sel; if (!L || L.type === 'person') return;
+  L.s = Number($('#elSize').value); L.rot = Number($('#elRot').value); L.op = Number($('#elOp').value); redraw();
+}));
+['#olOn','#olColor','#olWidth'].forEach(id => $(id).addEventListener('input', () => { if (needsSeg()) getSegmenter().catch(()=>{}); redraw(); }));
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tabs button').forEach(x => { x.setAttribute('aria-selected', x === b); $('#' + x.dataset.tab).hidden = x !== b; });
+}));
+/* stickers (OpenMoji) */
+(function buildStickers(){
+  const box = $('#stickList');
+  EMOJIS.forEach(code => {
+    const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', 'Sticker');
+    const im = document.createElement('img'); im.loading = 'lazy'; im.alt = ''; im.src = OM + code + '.svg'; b.append(im);
+    b.addEventListener('click', async () => { try { const i = await loadURL(OM + code + '.svg'); addLayer(rasterSquare(i), 'Sticker', { s: 0.28 }); } catch (e) { setMsg('#layerMsg', e.message, 'err'); } });
+    box.append(b);
+  });
+})();
+/* formas desenhadas no app */
+function shapeCanvas(kind, color, style){
+  const wide = kind === 'seta' || kind === 'tarja', W = 512, H = kind === 'tarja' ? 140 : wide ? 260 : 512;
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+  g.fillStyle = color; g.strokeStyle = color; g.lineWidth = 26; g.lineJoin = 'round';
+  const p = new Path2D(), m = 20;
+  if (kind === 'ret') p.roundRect(m, m, W - 2*m, H - 2*m, 40);
+  else if (kind === 'circ') p.arc(W/2, H/2, W/2 - m, 0, Math.PI*2);
+  else if (kind === 'estrela'){ for (let i = 0; i < 10; i++){ const r = i % 2 ? 100 : 235, a = -Math.PI/2 + i * Math.PI/5; i ? p.lineTo(256 + r*Math.cos(a), 266 + r*Math.sin(a)) : p.moveTo(256 + r*Math.cos(a), 266 + r*Math.sin(a)); } p.closePath(); }
+  else if (kind === 'coracao'){ p.moveTo(256, 450); p.bezierCurveTo(-60, 250, 90, -40, 256, 150); p.bezierCurveTo(422, -40, 572, 250, 256, 450); p.closePath(); }
+  else if (kind === 'seta'){ p.moveTo(m, 95); p.lineTo(330, 95); p.lineTo(330, m); p.lineTo(W - m, 130); p.lineTo(330, H - m); p.lineTo(330, 165); p.lineTo(m, 165); p.closePath(); }
+  else if (kind === 'balao'){ p.roundRect(m, m, W - 2*m, 360, 70); p.moveTo(150, 375); p.lineTo(110, 490); p.lineTo(260, 375); p.closePath(); }
+  else if (kind === 'tarja') p.rect(0, m, W, H - 2*m);
+  else if (kind === 'raio'){ p.moveTo(300, m); p.lineTo(110, 290); p.lineTo(240, 290); p.lineTo(190, 492); p.lineTo(400, 200); p.lineTo(265, 200); p.closePath(); }
+  if (style === 'line') g.stroke(p); else g.fill(p);
+  return c;
+}
+(function buildShapes(){
+  const box = $('#shapeList');
+  SHAPES.forEach(([k, label]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', label); b.title = label;
+    b.append(shapeCanvas(k, '#8fb6c4', 'fill'));
+    b.addEventListener('click', () => addLayer(shapeCanvas(k, $('#elColor').value, $('#shapeStyle').value), label, { shape: k, style: $('#shapeStyle').value, s: k === 'tarja' ? 1 : 0.35 }));
+    box.append(b);
+  });
+})();
+/* ícones (Iconify) */
+const iconURL = (name, color) => { const [pre, ic] = name.split(':'); return `https://api.iconify.design/${pre}/${ic}.svg?height=512&color=${encodeURIComponent(color)}`; };
+async function searchIcons(){
+  const q = $('#iconQ').value.trim(); if (!q) return;
+  setMsg('#iconMsg', 'Buscando…'); $('#iconList').innerHTML = '';
+  try {
+    const j = await (await fetch('https://api.iconify.design/search?limit=60&query=' + encodeURIComponent(q))).json();
+    const icons = j.icons || [];
+    if (!icons.length) return setMsg('#iconMsg', 'Nenhum ícone. Tente outra palavra, de preferência em inglês.', 'err');
+    setMsg('#iconMsg', `${icons.length} ícones. Toque para colocar no vídeo.`, 'ok');
+    icons.forEach(n => {
+      const b = document.createElement('button'); b.type = 'button'; b.title = n;
+      const im = document.createElement('img'); im.loading = 'lazy'; im.alt = ''; im.src = iconURL(n, '#e6fbff'); b.append(im);
+      b.addEventListener('click', async () => { try { addLayer(await loadURL(iconURL(n, $('#elColor').value)), 'Ícone', { icon: n, s: 0.25 }); } catch (e) { setMsg('#iconMsg', e.message, 'err'); } });
+      $('#iconList').append(b);
+    });
+  } catch { setMsg('#iconMsg', 'Não consegui buscar ícones agora. Confira a internet.', 'err'); }
+}
+$('#btnIconQ').addEventListener('click', searchIcons);
+$('#iconQ').addEventListener('keydown', e => { if (e.key === 'Enter') searchIcons(); });
+/* fotos livres (Openverse) */
+async function searchPhotos(){
+  const q = $('#photoQ').value.trim(); if (!q) return;
+  setMsg('#photoMsg', 'Buscando…'); $('#photoList').innerHTML = '';
+  try {
+    const j = await (await fetch('https://api.openverse.org/v1/images/?page_size=30&mature=false&q=' + encodeURIComponent(q))).json();
+    const items = (j.results || []).filter(x => x.thumbnail);
+    if (!items.length) return setMsg('#photoMsg', 'Nenhuma foto. Tente outra palavra, de preferência em inglês.', 'err');
+    setMsg('#photoMsg', `${items.length} fotos livres (Creative Commons). Toque para colocar no vídeo.`, 'ok');
+    items.forEach(it => {
+      const b = document.createElement('button'); b.type = 'button'; b.title = (it.title || '') + (it.creator ? ' — ' + it.creator : '');
+      const im = document.createElement('img'); im.loading = 'lazy'; im.alt = ''; im.src = it.thumbnail; b.append(im);
+      b.addEventListener('click', async () => {
+        try { addLayer(await loadURL(it.thumbnail), (it.title || 'Foto').slice(0, 40), { s: 0.6, credit: `${it.creator || 'autor desconhecido'} (${(it.license || '').toUpperCase()})` }); setMsg('#photoMsg', `Crédito da foto: ${it.creator || 'autor desconhecido'}, licença ${(it.license || '').toUpperCase()} ${it.license_version || ''}.`, 'ok'); }
+        catch { setMsg('#photoMsg', 'Essa foto não pôde ser usada. Escolha outra.', 'err'); }
+      });
+      $('#photoList').append(b);
+    });
+  } catch { setMsg('#photoMsg', 'Não consegui buscar fotos agora. Confira a internet.', 'err'); }
+}
+$('#btnPhotoQ').addEventListener('click', searchPhotos);
+$('#photoQ').addEventListener('keydown', e => { if (e.key === 'Enter') searchPhotos(); });
+/* minhas imagens: arquivo ou colar */
+async function addImageFile(f){ try { addLayer(await loadImage(f), f.name || 'Imagem colada', { s: 0.45 }); } catch (e) { setMsg('#layerMsg', e.message, 'err'); } }
+$('#mineInput').addEventListener('change', e => { [...e.target.files].forEach(addImageFile); e.target.value = ''; });
+document.addEventListener('paste', e => {
+  const items = [...(e.clipboardData?.items || [])].filter(i => i.type.startsWith('image/'));
+  if (!items.length) return;
+  e.preventDefault(); items.forEach(i => addImageFile(i.getAsFile()));
+  $('#layersBox').open = true; setMsg('#layerMsg', 'Imagem colada no vídeo.', 'ok');
+});
+/* cor: muda o elemento escolhido (forma ou ícone) */
+$('#elColor').addEventListener('change', async () => {
+  const L = S.sel; if (!L) return;
+  if (L.shape){ L.img = shapeCanvas(L.shape, $('#elColor').value, L.style); renderLayerList(); redraw(); }
+  else if (L.icon){ try { L.img = await loadURL(iconURL(L.icon, $('#elColor').value)); renderLayerList(); redraw(); } catch {} }
+});
+/* mexer na prévia: arrastar, pinça, rodinha */
+(function previewGestures(){
+  const pv = $('#preview'), ptrs = new Map(); let drag = null;
+  const toOut = e => { const r = pv.getBoundingClientRect(); return [(e.clientX - r.left) * OUT_W / r.width, (e.clientY - r.top) * OUT_H / r.height]; };
+  const hit = ([px, py]) => {
+    for (let i = S.layers.length - 1; i >= 0; i--){
+      const L = S.layers[i]; if (L.type === 'person') continue;
+      const [w, h] = layerSize(L), a = -L.rot * Math.PI / 180, dx = px - L.x, dy = py - L.y;
+      const rx = dx * Math.cos(a) - dy * Math.sin(a), ry = dx * Math.sin(a) + dy * Math.cos(a);
+      if (Math.abs(rx) <= w / 2 + 10 && Math.abs(ry) <= h / 2 + 10) return L;
+    }
+    return null;
+  };
+  const two = () => { const [a, b] = [...ptrs.values()]; return { d: Math.hypot(b[0] - a[0], b[1] - a[1]), ang: Math.atan2(b[1] - a[1], b[0] - a[0]), c: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] }; };
+  pv.addEventListener('pointerdown', e => {
+    if (S.exporting) return;
+    const p = toOut(e); ptrs.set(e.pointerId, p); pv.setPointerCapture(e.pointerId);
+    if (ptrs.size === 1){ const L = hit(p); if (L !== S.sel) selectLayer(L); drag = L ? { L, p0: p, x0: L.x, y0: L.y } : null; }
+    else if (ptrs.size === 2 && S.sel && S.sel.type !== 'person'){ const g = two(), L = S.sel; drag = { L, pinch: true, d0: g.d, a0: g.ang, c0: g.c, s0: L.s, r0: L.rot, x0: L.x, y0: L.y }; }
+  });
+  pv.addEventListener('pointermove', e => {
+    if (!ptrs.has(e.pointerId)) return;
+    ptrs.set(e.pointerId, toOut(e)); if (!drag) return;
+    const L = drag.L;
+    if (drag.pinch && ptrs.size === 2){
+      const g = two(); L.s = Math.max(0.05, Math.min(2.5, drag.s0 * g.d / drag.d0)); L.rot = drag.r0 + (g.ang - drag.a0) * 180 / Math.PI;
+      L.x = drag.x0 + g.c[0] - drag.c0[0]; L.y = drag.y0 + g.c[1] - drag.c0[1];
+      $('#elSize').value = L.s; $('#elRot').value = ((L.rot + 540) % 360) - 180;
+    } else if (!drag.pinch){ const p = ptrs.get(e.pointerId); L.x = drag.x0 + p[0] - drag.p0[0]; L.y = drag.y0 + p[1] - drag.p0[1]; }
+    redraw();
+  });
+  const end = e => { ptrs.delete(e.pointerId); if (ptrs.size === 0) drag = null; else if (drag && drag.pinch){ const L = drag.L, p = [...ptrs.values()][0]; drag = { L, p0: p, x0: L.x, y0: L.y }; } };
+  pv.addEventListener('pointerup', end); pv.addEventListener('pointercancel', end);
+  pv.addEventListener('wheel', e => { const L = S.sel; if (!L || L.type === 'person') return; e.preventDefault(); L.s = Math.max(0.05, Math.min(2.5, L.s * (e.deltaY < 0 ? 1.08 : 0.93))); $('#elSize').value = L.s; redraw(); }, { passive: false });
+  document.addEventListener('keydown', e => {
+    if (!S.sel || S.sel.type === 'person' || /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) return;
+    if (e.key === 'Delete' || e.key === 'Backspace'){ const L = S.sel; S.layers = S.layers.filter(x => x !== L); selectLayer(null); e.preventDefault(); }
+  });
+})();
+renderLayerList();
 
 /* ---------- 7. legendas ---------- */
 function buildCaptions(chunks, dur, n){
