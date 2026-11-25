@@ -179,7 +179,7 @@ details[open] summary{margin-bottom:10px}
 <!-- 2 -->
 <section class="step" id="s2">
   <div class="step-h"><div class="num">2</div><h2>Transcrever o áudio</h2></div>
-  <p>O Gemini transcreve pela internet, rápido e sem pesar o celular. Também dá para transcrever no próprio aparelho, sem internet, mas é mais lento.</p>
+  <p>O Gemini recebe o arquivo original, sem converter todo o vídeo para WAV na memória do celular. Para vídeos curtos, também há a opção de transcrição local.</p>
   <details id="gemKeyBox">
     <summary>Chave grátis do Gemini</summary>
     <div style="display:flex;flex-direction:column;gap:10px">
@@ -205,7 +205,7 @@ details[open] summary{margin-bottom:10px}
       </select>
     </label>
   </div>
-  <button class="btn primary" id="btnTranscribe" disabled>Transcrever</button>
+  <div class="row"><button class="btn primary" id="btnTranscribe" disabled>Transcrever</button><button class="btn" id="btnCancelAsr" hidden>Cancelar</button></div>
   <div class="bar" id="asrBar" hidden><i></i></div>
   <div class="msg" id="asrMsg"></div>
 
@@ -232,7 +232,7 @@ details[open] summary{margin-bottom:10px}
 <!-- 4 -->
 <section class="step" id="s4">
   <div class="step-h"><div class="num">4</div><h2>Gerar a voz</h2><span class="tag">Fish Audio</span></div>
-  <p>Gera o áudio do texto novo com a voz que você escolher no Fish Audio.</p>
+  <p>Gera o áudio aqui, com busca de vozes e integração Fish Audio pelo GitHub Actions. Configure a conexão GitHub mais abaixo.</p>
   <div class="row">
     <label>Buscar voz pelo nome
       <input id="voiceSearch" type="text" placeholder="ex.: repórter, locutor, narradora" autocomplete="off" enterkeyhint="search">
@@ -252,7 +252,7 @@ details[open] summary{margin-bottom:10px}
       <select id="fishModel">
         <option value="s2.1-pro-free">S2.1 grátis</option>
         <option value="s2.1-pro">S2.1 Pro</option>
-        <option value="s1">S1</option>
+        <option value="s2-pro">S2 Pro</option><option value="s1">S1 (antigo)</option>
       </select>
     </label>
   </div>
@@ -267,32 +267,34 @@ details[open] summary{margin-bottom:10px}
   <audio id="ttsAudio" controls hidden></audio>
   <a class="btn" id="ttsDownload" download="voz-nova.mp3" hidden>Baixar áudio para o DreamFace</a>
   <details>
-    <summary>Chave da API do Fish Audio</summary>
+    <summary>Chave Fish Audio (somente acesso direto, opcional)</summary>
     <div style="display:flex;flex-direction:column;gap:10px">
-      <p>Pegue a chave no site do Fish Audio, no menu de API Keys. O ID da voz é o código que aparece no endereço da página da voz. A API cobra créditos separados do plano do site; o modelo <b>S2.1 grátis</b> evita esse custo.</p>
+      <p>Pegue a chave no site do Fish Audio, no menu de API Keys. O ID da voz é o código que aparece no endereço da página da voz. A API tem cobrança própria para modelos pagos. O modelo <b>S2.1 grátis</b> é adequado para testes, conforme as condições vigentes da Fish Audio.</p>
       <label>Chave
-        <input id="fishKey" type="password" placeholder="Fica salva só neste celular" autocomplete="off">
+        <input id="fishKey" type="password" placeholder="Para acesso direto, não use em celular compartilhado" autocomplete="off">
       </label>
     </div>
   </details>
   <details id="ghBox">
-    <summary>Conexão pelo GitHub (para gerar a voz aqui)</summary>
+    <summary>Conexão GitHub — buscar vozes e gerar áudio aqui</summary>
     <div style="display:flex;flex-direction:column;gap:10px">
-      <p>O Fish Audio não deixa sites gerarem voz direto. Com esta conexão, o seu repositório <b>Avatar-studio</b> gera a voz e devolve para o app.</p>
+      <p>O GitHub Actions acessa o Fish Audio usando uma chave guardada como <b>Secret</b>. Assim, você escolhe vozes e gera áudio dentro deste app sem expor a chave Fish.</p>
       <ol class="how">
-        <li>Toque em <b>Criar token no GitHub</b>.</li>
-        <li>Em <b>Token name</b>, escreva <b>estudio-avatar</b>. Em <b>Expiration</b>, escolha 1 ano.</li>
-        <li>Em <b>Repository access</b>, marque <b>Only select repositories</b> e escolha <b>Avatar-studio</b>.</li>
-        <li>Em <b>Permissions</b>, abra <b>Repository permissions</b>, ache <b>Contents</b> e escolha <b>Read and write</b>.</li>
-        <li>Toque em <b>Generate token</b>, copie e cole aqui.</li>
+        <li>No GitHub, abra seu repositório <b>Avatar-studio</b> → <b>Settings → Secrets and variables → Actions → New repository secret</b>.</li>
+        <li>Nomeie o Secret <b>FISH_AUDIO_API_KEY</b> e cole sua chave de <b>fish.audio/app/api-keys</b>. Não escreva a chave aqui no chat.</li>
+        <li>Crie um token GitHub <b>fine-grained</b> para apenas o repositório <b>Avatar-studio</b> com <b>Contents: Read and write</b>. Cole o token no campo abaixo.</li>
+        <li>Toque em <b>Testar conexão</b>. Em seguida, busque a voz pelo nome e toque em <b>Gerar voz aqui</b>.</li>
       </ol>
-      <a class="btn" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Criar token no GitHub</a>
-      <label>Token do GitHub
+      <div class="row"><a class="btn" href="https://github.com/anthonymarusso-jpg/Avatar-studio/settings/secrets/actions" target="_blank" rel="noopener">Configurar Secret no GitHub</a><a class="btn" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Criar token GitHub</a></div>
+      <label>Token do GitHub (só durante esta sessão)
         <input id="ghToken" type="password" placeholder="github_pat_…" autocomplete="off">
       </label>
       <label>Repositório
         <input id="ghRepo" type="text" value="anthonymarusso-jpg/Avatar-studio" autocomplete="off">
       </label>
+      <button class="btn" id="btnGhTest" type="button">Testar conexão GitHub</button>
+      <div class="msg" id="ghMsg"></div>
+      <p>Com o token preenchido, <b>Buscas, Minhas vozes e Gerar voz</b> usam automaticamente o GitHub. O token não fica salvo permanentemente no aparelho. O processamento pode levar algum tempo.</p>
     </div>
   </details>
 </section>
@@ -305,11 +307,11 @@ details[open] summary{margin-bottom:10px}
     <li>Toque em <b>Abrir o DreamFace</b> e faça a boca do avatar com essa voz.</li>
     <li>Salve o vídeo na galeria e escolha ele no passo 6.</li>
   </ol>
-  <a class="btn primary" id="btnOpenDream" href="https://apps.apple.com/app/id1624172324" target="_blank" rel="noopener">Abrir o DreamFace</a>
+  <a class="btn primary" id="btnOpenDream" href="https://www.dreamfaceapp.com/pt/" target="_blank" rel="noopener">Abrir o DreamFace</a>
   <button class="btn" id="btnDreamDone">Já fiz, ir para o passo 6</button>
-  <div id="s5old" hidden>
+  <details id="s5old"><summary>Animar a boca dentro do Estúdio (alternativa ao DreamFace)</summary>
   <div class="file"><b>Áudio da voz</b><br><span id="dreamAudioName">Usa a voz gerada no passo 4. Se gerou no site do Fish Audio, toque para escolher o arquivo.</span><input id="dreamAudio" type="file" accept="audio/*"></div>
-  <label style="flex-direction:row;align-items:flex-start;gap:8px;font-weight:400"><input id="dreamOk" type="checkbox" style="margin-top:3px"> Confirmo que o rosto é de um avatar criado por IA, e não de uma pessoa real.</label>
+  <label style="flex-direction:row;align-items:flex-start;gap:8px;font-weight:400"><input id="dreamOk" type="checkbox" style="margin-top:3px"> Confirmo que tenho autorização para usar esta imagem e esta voz, inclusive se forem de pessoas reais.</label>
 
   <h3 style="margin:6px 0 0;font:800 15px var(--f-head)">Boca falante (grátis, no aparelho)</h3>
   <p>O app pega o rosto do avatar e mexe a boca e o queixo no ritmo da voz. É mais simples que o DreamFace, mas não custa nada. Funciona melhor com o avatar de frente e de boca fechada.</p>
@@ -340,7 +342,7 @@ details[open] summary{margin-bottom:10px}
       </label>
     </div>
   </details>
-</div>
+</details>
 </section>
 
 <!-- 6 -->
@@ -424,10 +426,36 @@ details[open] summary{margin-bottom:10px}
   </div>
   <div class="msg" id="segMsg"></div>
   <details id="photoCutBox">
-    <summary>Tirar o fundo de uma foto</summary>
+    <summary>Tirar o fundo de uma foto — recorte HD com ajuste de borda</summary>
     <div style="display:flex;flex-direction:column;gap:10px">
       <p>Tira o fundo e entrega um PNG transparente, para usar onde quiser. Também funciona com objetos e animais.</p>
       <div class="file"><b>Escolher foto</b><br><span id="cutName">JPG ou PNG da galeria</span><input id="cutInput" type="file" accept="image/*"></div>
+      <div class="row">
+        <label>Qualidade do recorte
+          <select id="cutQuality">
+            <option value="balanced">Equilibrado — recomendado</option>
+            <option value="precise">Alta precisão — cabelos e detalhes</option>
+            <option value="fast">Leve — Android com pouca memória</option>
+          </select>
+        </label>
+        <label>Correção do contorno
+          <select id="cutEdge">
+            <option value="-3">Contrair bastante</option><option value="-1.5">Contrair pouco</option>
+            <option value="0" selected>Natural</option><option value="1.5">Expandir pouco</option><option value="3">Expandir bastante</option>
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <label>Suavidade da borda <span id="cutFeatherVal">1,0 px</span>
+          <input id="cutFeather" type="range" min="0" max="3" step="0.5" value="1">
+        </label>
+        <label style="flex-direction:row;align-items:center;gap:8px"><input id="cutDehalo" type="checkbox" checked> Reduzir bordas coloridas e halos</label>
+      </div>
+      <div class="row">
+        <button class="btn" id="btnCutAdjust" disabled>Aplicar ajuste da borda</button>
+        <button class="btn" id="btnCutReprocess" disabled>Refazer com outra qualidade</button>
+      </div>
+      <div class="msg" id="cutInfo">O recorte de fotos roda no aparelho, sem chave de API. A imagem original é preservada até o limite de memória seguro.</div>
       <div class="msg" id="cutMsg"></div>
       <div class="stage"><canvas id="cutCanvas" hidden style="max-width:100%;width:320px;height:auto;border-radius:12px;background:repeating-conic-gradient(#2a3440 0 25%,#1a2129 0 50%) 0 0/20px 20px"></canvas></div>
       <a class="btn primary" id="cutDownload" download="foto-sem-fundo.png" hidden>Baixar PNG sem fundo</a>
@@ -483,6 +511,14 @@ details[open] summary{margin-bottom:10px}
     <a class="btn" id="btnDownload" download hidden>Baixar vídeo</a>
   </div>
   <div class="msg" id="shareMsg"></div>
+  <details id="backupBox">
+    <summary>Salvar ou restaurar informações e configurações do app</summary>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+      <p>As configurações, roteiros e chaves existentes são mantidos no mesmo endereço do aplicativo. Para trocar de arquivo ou navegador sem refazer tudo, faça um backup local. Não compartilhe o arquivo: ele pode conter chaves de API.</p>
+      <div class="row"><button type="button" class="btn" id="btnBackup">Salvar meus dados</button><div class="file" style="padding:10px"><b>Restaurar backup</b><input type="file" id="backupInput" accept="application/json,.json"></div></div>
+      <div class="msg" id="backupMsg"></div>
+    </div>
+  </details>
 </section>
 
 </div>
@@ -491,19 +527,30 @@ details[open] summary{margin-bottom:10px}
 <section class="step" id="m1">
   <div class="step-h"><div class="num">1</div><h2>Vídeo modelo e tema</h2></div>
   <p>Envie um vídeo que você quer usar de modelo e diga o tema do vídeo novo. O Gemini assiste ao modelo, entende as cenas, o ritmo e os textos, e escreve um roteiro novo no mesmo formato. Sem tema, ele só reescreve o texto com outras palavras.</p>
-  <div class="file"><b>Escolher o vídeo modelo</b><br><span id="mFileName">Até uns 3 minutos</span><input id="mFile" type="file" accept="video/*"></div>
+  <div class="file"><b>Escolher o vídeo modelo</b><br><span id="mFileName">MP4, MOV ou WebM (vídeo original)</span><input id="mFile" type="file" accept="video/*"></div>
   <label>Tema do vídeo novo
     <textarea id="mTheme" style="min-height:70px" placeholder="ex.: dicas para economizar na conta de luz, contadas por uma repórter animada"></textarea>
   </label>
-  <button class="btn primary" id="btnAnalyze">Analisar e criar o roteiro</button>
+  <div class="row"><button class="btn primary" id="btnAnalyze">Analisar e criar o roteiro</button><button class="btn" id="btnCancelAnalyze" hidden>Cancelar</button></div>
   <div class="bar" id="mBar" hidden><i></i></div>
-  <div class="msg" id="mMsg"></div>
+  <div class="msg" id="mMsg" role="status" aria-live="polite"></div>
+  <details id="manualScriptBox">
+    <summary>Continuar sem Gemini (roteiro manual)</summary>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <p>Se o Gemini estiver ocupado, cole aqui a narração que você quer usar. Separe cenas com uma linha em branco. A divisão manual não analisa o vídeo original.</p>
+      <label>Falas das cenas
+        <textarea id="manualScript" placeholder="Cena 1: O que vamos apresentar hoje…&#10;&#10;Cena 2: Veja os detalhes…"></textarea>
+      </label>
+      <button class="btn" id="btnManualScript" type="button">Criar cenas com meu texto</button>
+      <div class="msg" id="manualMsg"></div>
+    </div>
+  </details>
   <div class="clips" id="sceneList"></div>
 </section>
 
 <section class="step" id="m2">
   <div class="step-h"><div class="num">2</div><h2>Avatar de IA</h2></div>
-  <p>Crie um avatar de pessoa ou de pet com IA (grátis) ou use uma foto sua. Funciona melhor de frente, com o rosto bem visível.</p>
+  <p>Crie um avatar de pessoa ou pet com IA ou envie uma imagem autorizada. Você pode descrever pessoas, nomes, personagens e marcas; serviços externos mantêm suas próprias regras. Funciona melhor de frente, com o rosto visível.</p>
   <div class="row">
     <label>Tipo <select id="mAvType"><option value="pessoa">Pessoa</option><option value="pet">Pet</option></select></label>
     <label>Estilo <select id="mAvStyle"><option value="foto realista">Foto realista</option><option value="3D estilo animação">3D animação</option><option value="desenho animado">Desenho</option></select></label>
@@ -533,7 +580,7 @@ details[open] summary{margin-bottom:10px}
 <section class="step" id="m4">
   <div class="step-h"><div class="num">4</div><h2>Fazer o avatar falar</h2><span class="tag">DreamFace</span></div>
   <p>A DreamAvatar 3.0, do DreamFace, junta a foto do avatar com a voz e cria o vídeo com a boca e as expressões sincronizadas. É paga por segundo, no saldo da sua conta DreamAPI: cerca de 2 créditos por segundo em 480p. <span id="mCost"></span></p>
-  <label style="flex-direction:row;align-items:flex-start;gap:8px;font-weight:400"><input id="mOk" type="checkbox" style="margin-top:3px"> Confirmo que o avatar foi criado por IA ou é meu, e não é uma pessoa real conhecida.</label>
+  <label style="flex-direction:row;align-items:flex-start;gap:8px;font-weight:400"><input id="mOk" type="checkbox" style="margin-top:3px"> Confirmo que tenho os direitos ou a autorização necessária para usar a imagem e a voz do avatar.</label>
   <div class="row">
     <button class="btn primary" id="btnMDream">Animar com o DreamFace</button>
     <button class="btn" id="btnMFree">Animar grátis (mais simples)</button>
@@ -564,7 +611,9 @@ details[open] summary{margin-bottom:10px}
 
 <script type="module">
 const $ = s => document.querySelector(s);
-const OUT_W = 720, OUT_H = 1280;
+const LOW_MEMORY = (navigator.deviceMemory || 8) <= 4 && /Android/i.test(navigator.userAgent);
+const OUT_W = LOW_MEMORY ? 540 : 720, OUT_H = LOW_MEMORY ? 960 : 1280;
+for (const id of ['#preview', '#tlCanvas']) { const cv = $(id); cv.width = OUT_W; cv.height = OUT_H; }
 const TJS = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2';
 const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
 const SEG_MODEL = 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite';
@@ -581,8 +630,21 @@ function bindSaved(id, key, ev='input'){
   if (v != null){ if (el.type==='checkbox') el.checked = v; else el.value = v; }
   el.addEventListener(ev, () => store.set(key, el.type==='checkbox' ? el.checked : el.value));
 }
-['#mTheme:mTheme','#mAvDesc:mAvDesc','#giphyKey:giphyKey','#mDreamKey:dreamKey','#dreamKey:dreamKey','#ghToken:ghToken','#ghRepo:ghRepo','#gemKey:gemKey','#asrEngine:asrEngine','#fishKey:fishKey','#voiceId:voiceId','#fishModel:fishModel','#speed:speed','#asrModel:asrModel2','#transcript:transcript','#rewritten:rewritten','#postText:postText','#capWords:capWords','#capColor:capColor','#capPos:capPos','#capSize:capSize','#capUpper:capUpper','#scale:scale','#offsetY:offsetY','#bgColor:bgColor']
-  .forEach(p => { const [id,k] = p.split(':'); bindSaved(id, k, (id==='#capUpper'||id==='#asrEngine'||id.includes('Model')||id==='#capWords'||id==='#capColor') ? 'change' : 'input'); });
+['#mTheme:mTheme','#mAvDesc:mAvDesc','#giphyKey:giphyKey','#mDreamKey:dreamKey','#dreamKey:dreamKey','#ghRepo:ghRepo','#gemKey:gemKey','#asrEngine:asrEngine','#fishKey:fishKey','#voiceId:voiceId','#fishModel:fishModel','#speed:speed','#asrModel:asrModel2','#transcript:transcript','#rewritten:rewritten','#postText:postText','#capWords:capWords','#capColor:capColor','#capPos:capPos','#capSize:capSize','#capUpper:capUpper','#scale:scale','#offsetY:offsetY','#bgColor:bgColor','#cutQuality:cutQuality','#cutEdge:cutEdge','#cutFeather:cutFeather','#cutDehalo:cutDehalo']
+  .forEach(p => { const [id,k] = p.split(':'); bindSaved(id, k, (id==='#capUpper'||id==='#asrEngine'||id.includes('Model')||id==='#capWords'||id==='#capColor'||id==='#cutQuality'||id==='#cutEdge'||id==='#cutDehalo') ? 'change' : 'input'); });
+// GitHub token: session-only; migrate and erase any token persisted by v6.2.
+try {
+  const old = store.get('ghToken', '');
+  const token = sessionStorage.getItem('ea.ghToken') || old;
+  if (token) $('#ghToken').value = token;
+  localStorage.removeItem('ea.ghToken');
+  if (token) sessionStorage.setItem('ea.ghToken', token);
+  $('#ghToken').addEventListener('input', () => {
+    if ($('#ghToken').value) sessionStorage.setItem('ea.ghToken', $('#ghToken').value);
+    else sessionStorage.removeItem('ea.ghToken');
+  });
+} catch (_) {}
+
 
 const S = {
   srcFile:null, finalFile:null, ttsBlob:null,
@@ -650,12 +712,15 @@ onmessage = async (e) => {
     postMessage({ type:'done', text: out.text, chunks: out.chunks || [] });
   } catch (err) { postMessage({ type:'error', msg: String(err && err.message || err) }); }
 };`;
-let asrWorker = null;
+let asrWorker = null, asrWorkerURL = null;
+function releaseAsrWorker(){ if(asrWorker){ asrWorker.terminate(); asrWorker = null; } if(asrWorkerURL){ URL.revokeObjectURL(asrWorkerURL); asrWorkerURL=null; } }
 function getWorker(){
-  if (!asrWorker) asrWorker = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], {type:'text/javascript'})), {type:'module'});
+  if (!asrWorker){ asrWorkerURL=URL.createObjectURL(new Blob([WORKER_SRC], {type:'text/javascript'})); asrWorker = new Worker(asrWorkerURL, {type:'module'}); }
   return asrWorker;
 }
 async function decodeAudio(file){
+  // Local decoding buffers the entire track. Large media must use the low-memory cloud route.
+  if (file.size > 35 * 1024 * 1024) throw new Error('Arquivo muito grande para decodificar localmente. Selecione Gemini.');
   const Ctx = window.AudioContext || window.webkitAudioContext;
   const ctx = new Ctx({ sampleRate:16000 });
   try{
@@ -667,92 +732,232 @@ async function decodeAudio(file){
     return out;
   } finally { ctx.close?.(); }
 }
-function transcribe(file, barId, msgId){
-  return new Promise(async (resolve, reject) => {
-    setMsg(msgId, 'Lendo o áudio do vídeo…'); setBar(barId, 0.02);
-    let audio;
-    try { audio = await decodeAudio(file); }
-    catch(e){ setBar(barId,null); return reject(new Error('Não consegui ler o áudio desse vídeo. Tente exportar de novo em MP4.')); }
-    const w = getWorker(); const files = {}; let timer = null;
-    const stop = () => { clearInterval(timer); timer = null; };
-    w.onmessage = ({data:d}) => {
-      if (d.type==='dl'){ files[d.file] = d; const L = Object.values(files).reduce((s,f)=>s+(f.loaded||0),0), T = Object.values(files).reduce((s,f)=>s+(f.total||0),0);
-        setMsg(msgId, `Baixando modelo de fala… ${T? Math.round(L/1048576)+' de '+Math.round(T/1048576)+' MB':''}`); setBar(barId, T? 0.05+0.55*L/T : 0.1); }
-      else if (d.type==='info') setMsg(msgId, d.msg);
-      else if (d.type==='stage'){
-        const t0 = Date.now(), est = Math.max(20, (audio.length / 16000) * 1.5);
-        timer = setInterval(() => { const sec = (Date.now() - t0) / 1000;
-          setMsg(msgId, `Transcrevendo… ${Math.floor(sec)}s. Não travou, é só aguardar.`);
-          setBar(barId, 0.6 + 0.38 * (1 - Math.exp(-sec / est))); }, 1000);
-        setMsg(msgId, 'Transcrevendo…'); setBar(barId, 0.6); }
-      else if (d.type==='done'){ stop(); S.busy = false; store.set('asrRunning', null); setBar(barId, null); resolve(d); }
-      else if (d.type==='error'){ stop(); S.busy = false; store.set('asrRunning', null); setBar(barId, null); reject(new Error('A transcrição falhou: ' + d.msg)); }
+async function transcribe(file, barId, msgId, signal){
+  if (LOW_MEMORY && $('#asrModel').value !== 'Xenova/whisper-tiny') {
+    $('#asrModel').value = 'Xenova/whisper-tiny'; store.set('asrModel2', $('#asrModel').value);
+  }
+  if (file.size > 18 * 1024 * 1024) throw new Error('Para proteger a memória do Android, use o Gemini com este vídeo.');
+  if (signal?.aborted) throw new DOMException('Cancelado','AbortError');
+  setMsg(msgId,'Lendo o áudio do vídeo…'); setBar(barId,0.02);
+  let audio;
+  try { audio=await decodeAudio(file); }
+  catch(e){setBar(barId,null);throw new Error('Não consegui decodificar o áudio localmente. Use Gemini ou converta o vídeo para MP4.');}
+  if(signal?.aborted){setBar(barId,null);throw new DOMException('Cancelado','AbortError');}
+  return new Promise((resolve,reject)=>{
+    const w=getWorker(), files={};let timer=null, deadline=null,finished=false;
+    const cleanup=()=>{
+      clearInterval(timer);clearTimeout(deadline);
+      signal?.removeEventListener('abort',cancel);
+      S.busy=false;store.set('asrRunning',null);setBar(barId,null);releaseAsrWorker();
     };
-    const device = 'wasm';
-    store.set('asrRunning', $('#asrModel').value); S.busy = true; $('#srcVideo').pause();
-    const secs = audio.length / 16000;
-    w.postMessage({ audio, model: $('#asrModel').value, device }, [audio.buffer]);
-    audio = { length: secs * 16000 };
+    const done=(value,error)=>{if(finished)return;finished=true;cleanup();error?reject(error):resolve(value);};
+    const cancel=()=>done(null,new DOMException('Cancelado','AbortError'));
+    signal?.addEventListener('abort',cancel,{once:true});
+    deadline=setTimeout(()=>done(null,new Error('Transcrição local ultrapassou cinco minutos. Use Gemini ou um vídeo menor.')),300000);
+    w.onerror=e=>done(null,new Error('Erro ao iniciar o modelo de transcrição local. Use Gemini ou verifique a conexão.'));
+    w.onmessage=({data:d})=>{
+      if(d.type==='dl'){
+        files[d.file]=d;
+        const L=Object.values(files).reduce((s,f)=>s+(f.loaded||0),0),T=Object.values(files).reduce((s,f)=>s+(f.total||0),0);
+        setMsg(msgId,`Baixando modelo… ${T?Math.round(L/1048576)+' de '+Math.round(T/1048576)+' MB':''}`);
+        setBar(barId,T?0.05+0.55*L/T:0.1);
+      } else if(d.type==='info') setMsg(msgId,d.msg);
+      else if(d.type==='stage'){
+        const t0=Date.now(),est=Math.max(20,(audioLength/16000)*1.5);
+        clearInterval(timer);timer=setInterval(()=>{
+          const sec=(Date.now()-t0)/1000;
+          setMsg(msgId,`Transcrevendo localmente… ${Math.floor(sec)} s. Use Cancelar se ficar lento.`);
+          setBar(barId,0.6+0.38*(1-Math.exp(-sec/est)));
+        },1000);setMsg(msgId,'Transcrevendo localmente…');setBar(barId,0.6);
+      } else if(d.type==='done') done(d);
+      else if(d.type==='error') done(null,new Error('A transcrição falhou: '+d.msg));
+    };
+    const audioLength=audio.length;
+    try{
+      store.set('asrRunning',$('#asrModel').value);S.busy=true;$('#srcVideo').pause();
+      w.postMessage({audio,model:$('#asrModel').value,device:'wasm'},[audio.buffer]);audio=null;
+    }catch(e){done(null,e);}
   });
 }
-/* ---------- Gemini (chave grátis do Google AI Studio) ---------- */
-const GEM_MODELS = ['gemini-3.5-flash', 'gemini-3.1-flash-lite'];
-async function gemini(parts, json){
+/* ---------- Gemini: arquivos originais, upload em fluxo, sem WAV gigante ---------- */
+// Resiliência a sobrecarga 503/429: nenhum pedido fica preso em loop infinito.
+const GEM_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
+const GEM_BASE = 'https://generativelanguage.googleapis.com';
+const activeJobs = new Map();
+let lastGoodGemModel = null;
+function beginJob(name, cancelId){
+  const c = new AbortController(); activeJobs.set(name, c); $(cancelId).hidden = false; return c;
+}
+function finishJob(name, cancelId){ activeJobs.delete(name); $(cancelId).hidden = true; }
+function cancelJob(name){ const c = activeJobs.get(name); if(c) c.abort(); }
+$('#btnCancelAsr').addEventListener('click', () => cancelJob('transcribe'));
+$('#btnCancelAnalyze').addEventListener('click', () => cancelJob('analyze'));
+const jobError = e => e?.name === 'AbortError' ? new Error('Operação cancelada.') : e;
+function abortCheck(signal){ if (signal?.aborted) throw new DOMException('Operação cancelada.', 'AbortError'); }
+function waitCancelable(ms, signal){
+  abortCheck(signal);
+  return new Promise((resolve, reject) => {
+    let timer;
+    const abort = () => { clearTimeout(timer); reject(new DOMException('Cancelado', 'AbortError')); };
+    timer = setTimeout(() => {signal?.removeEventListener('abort',abort); resolve();}, ms);
+    signal?.addEventListener('abort', abort, {once:true});
+  });
+}
+async function fetchTimed(url, options, maxMs=75000){
+  const { signal:external, ...rest } = options;
+  const ctl = new AbortController();
+  let timer, externalAbort;
+  if (external) { externalAbort=()=>ctl.abort(); external.addEventListener('abort',externalAbort,{once:true}); if(external.aborted) ctl.abort(); }
+  timer=setTimeout(()=>ctl.abort(),maxMs);
+  try { return await fetch(url,{...rest,signal:ctl.signal}); }
+  catch(e) {
+    if(external?.aborted) throw new DOMException('Cancelado','AbortError');
+    if(ctl.signal.aborted) throw new Error('Tempo limite da conexão com o Gemini.');
+    throw e;
+  } finally { clearTimeout(timer); if(externalAbort) external.removeEventListener('abort',externalAbort); }
+}
+function geminiHttpError(code,msg){
+  if(code===401 || (code===400 && /api key|chave|API_KEY_INVALID/i.test(msg))) return new Error('Chave do Gemini inválida. Confira no Google AI Studio.');
+  if(code===403) return new Error('A chave do Gemini não tem permissão. Confira no Google AI Studio.');
+  if(code===429) return new Error('Limite de uso do Gemini atingido nesta chave. Confira sua cota no Google AI Studio e tente mais tarde.');
+  if(code===503 || code===502 || code===504 || code===500) return new Error('Os servidores do Gemini estão ocupados (erro '+code+'). Já tentei modelos alternativos. Tente novamente mais tarde ou use o roteiro manual abaixo.');
+  if(code===404) return new Error('Este modelo Gemini não está disponível para sua chave.');
+  return new Error(`Gemini: erro ${code}. ${String(msg).slice(0,190)}`);
+}
+async function gemini(parts, json, signal, onStatus){
   const key = $('#gemKey').value.trim();
-  if (!key){ $('#gemKeyBox').open = true; throw new Error('Coloque a chave grátis do Gemini no passo 2.'); }
-  let last = null;
-  for (const m of GEM_MODELS){
-    let res;
-    try {
-      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
-        method:'POST', headers:{ 'Content-Type':'application/json', 'x-goog-api-key':key },
-        body: JSON.stringify({ contents:[{ role:'user', parts }], generationConfig: json ? { responseMimeType:'application/json', temperature:0 } : { temperature:0.8 } })
-      });
-    } catch { throw new Error('Sem conexão com o Gemini. Confira a internet.'); }
-    if (res.ok){
-      const j = await res.json();
-      const t = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('').trim();
-      if (!t) throw new Error('O Gemini não devolveu texto. Tente de novo.');
-      return t;
+  if (!key){ $('#gemKeyBox').open = true; throw new Error('Coloque sua chave do Gemini no passo 2.'); }
+  const models = [...GEM_MODELS];
+  if(lastGoodGemModel && models.includes(lastGoodGemModel)) {models.splice(models.indexOf(lastGoodGemModel),1); models.unshift(lastGoodGemModel);}
+  const payload=JSON.stringify({contents:[{role:'user',parts}], generationConfig:json?{responseMimeType:'application/json',temperature:0}:{temperature:0.8}});
+  let lastStatus=0, lastMessage='', got429=false, got503=false, tried=0;
+  for(const [idx,model] of models.entries()) {
+    for(let attempt=0;attempt<2;attempt++) {
+      abortCheck(signal);
+      tried++;
+      onStatus?.(`Gemini: ${model} · tentativa ${attempt+1}/2${idx?' · modelo alternativo':''}…`);
+      let response;
+      try {
+        response=await fetchTimed(`${GEM_BASE}/v1beta/models/${model}:generateContent`,{
+          method:'POST',signal,headers:{'Content-Type':'application/json','x-goog-api-key':key},body:payload
+        },90000);
+      } catch(e){
+        if(signal?.aborted) throw new DOMException('Cancelado','AbortError');
+        // Falhas de conexão/timeouts são transitórias, tente outro modelo.
+        lastMessage=e.message||'Falha de conexão'; lastStatus=0;
+        if(attempt===0){onStatus?.('Instabilidade de conexão. Nova tentativa em instantes…');await waitCancelable(1000,signal);}
+        continue;
+      }
+      if(response.ok){
+        const data=await response.json();
+        const t=(data.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('').trim();
+        if(!t) throw new Error('O Gemini não retornou texto. Pode haver bloqueio ou resposta vazia; revise sua solicitação.');
+        lastGoodGemModel=model;
+        onStatus?.('Resposta recebida. Finalizando…');
+        return t;
+      }
+      let err={};try{err=await response.json();}catch{}
+      lastStatus=response.status;lastMessage=err.error?.message||'';
+      if(response.status===429) got429=true;
+      if(response.status>=500) got503=true;
+      if([400,401,403,402].includes(response.status)) throw geminiHttpError(response.status,lastMessage);
+      // 404: versão de modelo não habilitada; passe para o próximo sem repetir.
+      if(response.status===404) break;
+      if(![408,429,500,502,503,504].includes(response.status)) throw geminiHttpError(response.status,lastMessage);
+      if(attempt===0){
+        const retryAfter=Number(response.headers.get('Retry-After'));
+        const waitMs=Number.isFinite(retryAfter) && retryAfter>0 ? Math.min(6000,retryAfter*1000) : 900 + idx*350;
+        onStatus?.(response.status===503 ? `Gemini ocupado (503). Tentando novamente em ${Math.ceil(waitMs/1000)} s…` : `Gemini retornou ${response.status}. Nova tentativa em ${Math.ceil(waitMs/1000)} s…`);
+        await waitCancelable(waitMs,signal);
+      }
     }
-    let msg = ''; try { msg = (await res.json()).error?.message || ''; } catch {}
-    if (res.status === 400 && /api key/i.test(msg)) throw new Error('Chave do Gemini inválida. Confira e cole de novo.');
-    if (res.status === 403) throw new Error('Essa chave do Gemini não tem permissão. Gere outra no Google AI Studio.');
-    last = new Error(res.status === 429 ? 'O limite grátis do Gemini acabou por agora. Espere um minuto e tente de novo.' : `O Gemini respondeu erro ${res.status}. ${msg}`);
-    if (res.status !== 404 && res.status !== 429 && res.status < 500) break;
   }
-  throw last;
+  if(got503) throw new Error('Gemini indisponível por excesso de demanda (503). Testei '+models.length+' modelos e '+tried+' tentativas. O vídeo continua selecionado: tente novamente ou abra “Continuar sem Gemini” abaixo.');
+  if(got429) throw geminiHttpError(429,lastMessage);
+  if(lastStatus) throw geminiHttpError(lastStatus,lastMessage);
+  throw new Error('Sem conexão estável com o Gemini após '+tried+' tentativas. Confira a internet ou continue pelo roteiro manual.');
 }
-function wavBase64(f32, rate = 16000){
-  const n = f32.length, buf = new ArrayBuffer(44 + n*2), v = new DataView(buf);
-  const w = (o, str) => { for (let i=0;i<str.length;i++) v.setUint8(o+i, str.charCodeAt(i)); };
-  w(0,'RIFF'); v.setUint32(4, 36 + n*2, true); w(8,'WAVE'); w(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
-  v.setUint32(24, rate, true); v.setUint32(28, rate*2, true); v.setUint16(32,2,true); v.setUint16(34,16,true); w(36,'data'); v.setUint32(40, n*2, true);
-  for (let i=0;i<n;i++){ const x = Math.max(-1, Math.min(1, f32[i])); v.setInt16(44 + i*2, x < 0 ? x*0x8000 : x*0x7fff, true); }
-  const bytes = new Uint8Array(buf); let bin = '';
-  for (let i=0;i<bytes.length;i+=0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i+0x8000));
-  return btoa(bin);
+function fileMime(file){
+  if (file.type && (file.type.startsWith('video/') || file.type.startsWith('audio/'))) return file.type;
+  const ext = file.name.split('.').pop().toLowerCase();
+  return ({mp4:'video/mp4',mov:'video/quicktime',webm:'video/webm',mp3:'audio/mpeg',wav:'audio/wav',m4a:'audio/mp4'})[ext] || 'application/octet-stream';
 }
-async function transcribeGemini(file, barId, msgId){
-  setMsg(msgId, 'Lendo o áudio do vídeo…'); setBar(barId, 0.15);
-  let audio;
-  try { audio = await decodeAudio(file); }
-  catch { setBar(barId, null); throw new Error('Não consegui ler o áudio desse vídeo. Tente exportar de novo em MP4.'); }
-  const dur = audio.length / 16000;
-  if (dur > 540){ setBar(barId, null); throw new Error('O vídeo passa de 9 minutos. Use um vídeo mais curto.'); }
-  const prompt = `Transcreva palavra por palavra a fala deste áudio, em português do Brasil, com pontuação. Devolva só JSON neste formato: {"text": "texto completo", "segments": [{"start": 0.0, "end": 2.4, "text": "trecho"}]}. start e end são segundos (número decimal), cada trecho tem uma frase curta, em ordem. O áudio tem ${dur.toFixed(1)} segundos.`;
-  const t0 = Date.now(); setBar(barId, 0.5);
-  const timer = setInterval(() => setMsg(msgId, `Transcrevendo no Gemini… ${Math.floor((Date.now()-t0)/1000)}s`), 1000);
-  setMsg(msgId, 'Enviando para o Gemini…');
+async function fileToB64(file){
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  // Assemble in smaller pieces to avoid the Android stack/string allocation limit.
+  const segments = [];
+  for(let i=0;i<bytes.length;i+=0x6000) segments.push(String.fromCharCode(...bytes.subarray(i,i+0x6000)));
+  const encoded = btoa(segments.join(''));
+  segments.length = 0;
+  return encoded;
+}
+const gemUploadCache = new WeakMap();
+async function geminiFilePart(file, onMsg, signal){
+  abortCheck(signal);
+  const key = $('#gemKey').value.trim();
+  if (!key){ $('#gemKeyBox').open = true; throw new Error('Coloque sua chave do Gemini no passo 2.'); }
+  const cached=gemUploadCache.get(file);
+  if(cached?.key===key){
+    onMsg?.('Vídeo já enviado nesta sessão. Reutilizando análise anterior…');
+    return cached.part;
+  }
+  const mime = fileMime(file);
   try {
-    const out = await gemini([{ inline_data:{ mime_type:'audio/wav', data: wavBase64(audio) } }, { text: prompt }], true);
-    let j; try { j = JSON.parse(out.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim()); } catch { j = { text: out, segments: [] }; }
-    let chunks = (Array.isArray(j.segments) ? j.segments : []).filter(x => x && x.text)
-      .map(x => ({ timestamp:[Math.max(0, toSec(x.start)), Math.min(dur, toSec(x.end))], text: ' ' + String(x.text).trim() }));
-    const text = (j.text || chunks.map(c => c.text).join('')).trim();
-    if (!chunks.length || chunks.some(c => !(c.timestamp[1] > c.timestamp[0]))) chunks = [{ timestamp:[0, dur], text: ' ' + text }];
-    return { text, chunks };
-  } finally { clearInterval(timer); setBar(barId, null); }
+    onMsg?.('Enviando mídia original ao Gemini (sem decodificar no celular)…');
+    const start = await fetch(`${GEM_BASE}/upload/v1beta/files`, {
+      method:'POST', signal, headers:{ 'x-goog-api-key':key, 'Content-Type':'application/json',
+        'X-Goog-Upload-Protocol':'resumable', 'X-Goog-Upload-Command':'start',
+        'X-Goog-Upload-Header-Content-Length':String(file.size), 'X-Goog-Upload-Header-Content-Type':mime },
+      body:JSON.stringify({ file:{ display_name:(file.name || 'video').slice(0,100) } })
+    });
+    if (!start.ok){ const j = await start.json().catch(()=>({})); throw new Error(`Upload do Gemini: HTTP ${start.status}. ${j.error?.message||''}`); }
+    const url = start.headers.get('x-goog-upload-url');
+    if (!url || !url.startsWith(`${GEM_BASE}/`)) throw new Error('O servidor não disponibilizou o endereço de upload ao navegador.');
+    const uploaded = await fetch(url,{ method:'POST', signal, headers:{
+      'x-goog-api-key':key, 'Content-Type':mime, 'X-Goog-Upload-Offset':'0',
+      'X-Goog-Upload-Command':'upload, finalize' }, body:file });
+    if(!uploaded.ok){ const j = await uploaded.json().catch(()=>({})); throw new Error(`Falha no envio: HTTP ${uploaded.status}. ${j.error?.message||''}`); }
+    let info = (await uploaded.json()).file;
+    if (!info?.uri || !info?.name) throw new Error('O Gemini não retornou o URI do arquivo.');
+    const deadline = Date.now()+120000;
+    while (info.state === 'PROCESSING'){
+      if(signal?.aborted) throw new DOMException('Cancelado','AbortError');
+      if(Date.now()>deadline) throw new Error('O Gemini ainda está processando este vídeo. Tente um vídeo menor.');
+      onMsg?.('Gemini processando o vídeo…');
+      await waitCancelable(2000, signal);
+      const poll = await fetch(`${GEM_BASE}/v1beta/${info.name}`, { headers:{ 'x-goog-api-key':key }, signal });
+      if(!poll.ok) throw new Error('Não consegui consultar a situação do arquivo no Gemini.');
+      info = await poll.json();
+    }
+    if(info.state==='FAILED') throw new Error('O Gemini não conseguiu processar este arquivo de vídeo.');
+    const dataPart={ file_data:{ mime_type:mime, file_uri:info.uri } };
+    gemUploadCache.set(file,{key,part:dataPart});
+    return dataPart;
+  } catch(e){
+    if(signal?.aborted) throw jobError(e);
+    // Quando há falha de autorização/servidor não gaste RAM tentando converter o vídeo inteiro.
+    if (/HTTP (400|401|402|403|429|502|503|504)\b/i.test(e.message||'')) throw new Error('Envio ao Gemini falhou: '+e.message);
+    if (file.size > 10*1024*1024) throw new Error('O envio direto de arquivos não funcionou neste navegador. Para vídeo acima de 10 MB, abra o app por HTTPS ou escolha um arquivo menor. Detalhe: '+e.message);
+    abortCheck(signal);
+    onMsg?.('Tentando enviar arquivo pequeno diretamente ao Gemini…');
+    return { inline_data:{ mime_type:mime, data:await fileToB64(file) } };
+  }
+}
+async function transcribeGemini(file, barId, msgId, signal){
+  setBar(barId,0.15);
+  try {
+    const part = await geminiFilePart(file, m=>setMsg(msgId,m),signal);
+    setBar(barId,0.55); setMsg(msgId,'Gemini transcrevendo a fala…');
+    const prompt = `Transcreva palavra por palavra a fala do arquivo, em português do Brasil, com pontuação. Não resuma. Devolva somente JSON com este formato: {"text":"texto completo","segments":[{"start":0.0,"end":2.4,"text":"trecho"}]}. start e end são segundos numéricos, cada trecho é uma frase curta, em ordem.`;
+    const out = await gemini([part,{text:prompt}],true,signal,m=>setMsg(msgId,m));
+    let j; try { j=JSON.parse(out.replace(/^```(?:json)?/i,'').replace(/```$/,'').trim()); } catch { j={text:out,segments:[]}; }
+    let chunks=(Array.isArray(j.segments)?j.segments:[]).filter(x=>x&&x.text).map(x=>({
+      timestamp:[Math.max(0,toSec(x.start)),Math.max(0,toSec(x.end))], text:' '+String(x.text).trim() }));
+    const text=String(j.text||chunks.map(c=>c.text).join('')).trim();
+    if(!text) throw new Error('O Gemini não identificou falas no arquivo.');
+    if(!chunks.length || chunks.some(c=>!(c.timestamp[1]>c.timestamp[0]))) chunks=[{timestamp:[0,Math.max(1,toSec(j.duration)||5)],text:' '+text}];
+    return {text,chunks};
+  } finally {setBar(barId,null);}
 }
 function toSec(v){
   if (typeof v === 'number') return v;
@@ -760,8 +965,8 @@ function toSec(v){
   if (p.some(x => !isFinite(x))) return 0;
   return p.reduce((a, x) => a * 60 + x, 0);
 }
-function runTranscribe(file, barId, msgId){
-  return $('#asrEngine').value === 'gemini' ? transcribeGemini(file, barId, msgId) : transcribe(file, barId, msgId);
+function runTranscribe(file, barId, msgId, signal){
+  return $('#asrEngine').value === 'gemini' ? transcribeGemini(file, barId, msgId, signal) : transcribe(file, barId, msgId, signal);
 }
 function syncEngine(){
   const g = $('#asrEngine').value === 'gemini';
@@ -773,7 +978,7 @@ $('#btnGemRewrite').addEventListener('click', async () => {
   if (!$('#transcript').value.trim()) return setMsg('#claudeMsg','Faça a transcrição do passo 2 primeiro.','err');
   const b = $('#btnGemRewrite'); b.disabled = true; setMsg('#claudeMsg','Reescrevendo no Gemini…');
   try {
-    const out = await gemini([{ text: promptText() }], false);
+    const out = await gemini([{ text: promptText() }], false, undefined,m=>setMsg('#claudeMsg',m));
     $('#rewritten').value = out.replace(/^["“]|["”]$/g, '').trim(); store.set('rewritten', $('#rewritten').value);
     setMsg('#claudeMsg','Pronto. Leia e ajuste o que quiser.','ok'); markDone(3);
   } catch (e) { setMsg('#claudeMsg', e.message, 'err'); }
@@ -788,12 +993,15 @@ $('#btnGemRewrite').addEventListener('click', async () => {
   setMsg('#asrMsg','Da última vez o celular ficou sem memória transcrevendo no aparelho. Troquei para o Gemini, que não pesa o celular.','err');
 })();
 $('#btnTranscribe').addEventListener('click', async () => {
+  if (!S.srcFile) return setMsg('#asrMsg','Escolha o vídeo antes de transcrever.','err');
   const b = $('#btnTranscribe'); b.disabled = true;
+  const job = beginJob('transcribe','#btnCancelAsr');
   try{
-    const r = await runTranscribe(S.srcFile, '#asrBar', '#asrMsg');
+    const r = await runTranscribe(S.srcFile, '#asrBar', '#asrMsg',job?.signal);
     $('#transcript').value = r.text.trim(); store.set('transcript', r.text.trim());
     setMsg('#asrMsg', 'Pronto. Confira o texto antes de seguir.', 'ok'); markDone(2); updateClaudeLink();
-  }catch(e){ setMsg('#asrMsg', e.message, 'err'); }
+  }catch(e){ setMsg('#asrMsg',jobError(e).message, 'err'); }
+  finishJob('transcribe','#btnCancelAsr');
   b.disabled = false;
 });
 
@@ -817,13 +1025,13 @@ $('#btnTTS').addEventListener('click', async () => {
   const text = $('#rewritten').value.trim();
   const key = $('#fishKey').value.trim();
   if (!text) return setMsg('#ttsMsg','Cole o texto novo no passo 3 primeiro.','err');
-  if (!key) return setMsg('#ttsMsg','Coloque a chave da API em "Chave da API do Fish Audio", ou use o botão Gerar no site do Fish Audio.','err');
+  if (!key && !$('#ghToken').value.trim()) { $('#ghBox').open = true; return setMsg('#ttsMsg','Configure o token GitHub abaixo ou informe uma chave Fish Audio para acesso direto.','err'); }
   const b = $('#btnTTS'); b.disabled = true; setMsg('#ttsMsg','Gerando a voz…');
   const body = { text, format:'mp3', language:'pt', prosody:{ speed:Number($('#speed').value) } };
   const voice = $('#voiceId').value.trim(); if (voice) body.reference_id = voice;
   try{
     if ($('#ghToken').value.trim()){
-      S.ttsBlob = await ttsViaGitHub(body, $('#fishModel').value, key);
+      S.ttsBlob = await fishViaGitHub('voz', { model: $('#fishModel').value, body }, '#ttsMsg');
       return showVoice();
     }
     let res;
@@ -851,35 +1059,83 @@ function showVoice(){
   const d = $('#ttsDownload'); d.href = url; d.hidden = false;
   setMsg('#ttsMsg','Voz pronta. Ouça e baixe para usar no DreamFace.','ok'); markDone(4);
 }
-/* gera a voz pelo GitHub Actions do repositório Avatar-studio */
-async function ttsViaGitHub(body, model, key){
+/* Fish Audio pelo repositório privado: TTS e busca. Nenhuma chave Fish é enviada no evento. */
+function githubConfig(){
   const tok = $('#ghToken').value.trim();
-  const repo = ($('#ghRepo').value.trim() || 'anthonymarusso-jpg/Avatar-studio').replace(/^https?:\/\/github\.com\//, '').replace(/\/+$/, '');
-  const api = 'https://api.github.com/repos/' + repo, H = { 'Authorization':'Bearer ' + tok, 'Accept':'application/vnd.github+json' };
-  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-  let r;
-  try { r = await fetch(api + '/dispatches', { method:'POST', headers:{ ...H, 'Content-Type':'application/json' }, body: JSON.stringify({ event_type:'voz', client_payload:{ id, key, model, body } }) }); }
-  catch { throw new Error('Sem conexão com o GitHub. Confira a internet.'); }
-  if (r.status === 401) throw new Error('Token do GitHub recusado. Crie outro e cole de novo.');
-  if (r.status === 403 || r.status === 404) throw new Error('O token não tem acesso ao repositório ' + repo + '. Confira se escolheu Avatar-studio e a permissão Contents: Read and write.');
-  if (!r.ok) throw new Error('O GitHub respondeu erro ' + r.status + '.');
-  const raw = { ...H, 'Accept':'application/vnd.github.raw' }, ref = 'voz-' + id, t0 = Date.now();
-  const drop = () => fetch(api + '/git/refs/heads/' + ref, { method:'DELETE', headers:H }).catch(() => {});
-  while (Date.now() - t0 < 240000){
-    await new Promise(res => setTimeout(res, 4000));
-    setMsg('#ttsMsg', `Gerando a voz pelo GitHub… ${Math.floor((Date.now() - t0) / 1000)}s (leva uns 30 segundos)`);
-    let br; try { br = await fetch(api + '/branches/' + ref, { headers:H, cache:'no-store' }); } catch { continue; }
-    if (!br.ok) continue;
-    const f = await fetch(api + '/contents/voz.mp3?ref=' + ref, { headers:raw, cache:'no-store' });
-    if (f.ok){ const blob = await f.blob(); drop(); return new Blob([blob], { type:'audio/mpeg' }); }
-    const e = await fetch(api + '/contents/erro.txt?ref=' + ref, { headers:raw, cache:'no-store' });
-    const txt = e.ok ? await e.text() : ''; drop();
-    const code = (txt.split('\n')[0] || '').trim(); let m = ''; try { m = JSON.parse(txt.slice(txt.indexOf('{'))).message || ''; } catch {}
-    if (code === '401') throw new Error('Chave do Fish Audio recusada. Confira a chave.');
-    if (code === '402') throw new Error('Sem créditos na API do Fish Audio para esse modelo. Tente o modelo "S2.1 grátis" ou coloque créditos em fish.audio/app/billing.');
-    throw new Error('O Fish Audio respondeu erro ' + (code || '?') + '. ' + m);
+  const repo = ($('#ghRepo').value.trim() || 'anthonymarusso-jpg/Avatar-studio')
+    .replace(/^https?:\/\/github\.com\//, '').replace(/\/+$/, '');
+  if (!tok) throw new Error('Abra Conexão GitHub e cole seu token.');
+  if (!/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(repo)) throw new Error('Endereço do repositório GitHub inválido.');
+  return {tok,repo,api:'https://api.github.com/repos/'+repo,
+    headers:{Authorization:'Bearer '+tok,Accept:'application/vnd.github+json'}};
+}
+$('#btnGhTest').addEventListener('click', async () => {
+  const b=$('#btnGhTest'); b.disabled=true; setMsg('#ghMsg','Conferindo repositório e workflow…');
+  try {
+    const {api,headers}=githubConfig();
+    const [r,w]=await Promise.all([
+      fetch(api,{headers,cache:'no-store'}),
+      fetch(api+'/contents/.github/workflows/voz.yml',{headers,cache:'no-store'})
+    ]);
+    if (r.status===401 || w.status===401) throw new Error('Token GitHub recusado.');
+    if (r.status===403 || r.status===404 || w.status===403) throw new Error('Token sem acesso ao repositório. Confira Contents: Read and write.');
+    if (!r.ok || !w.ok) throw new Error('Workflow voz.yml não encontrado no repositório.');
+    setMsg('#ghMsg','GitHub conectado e workflow encontrado. A chave Fish será conferida na primeira operação.','ok');
+  } catch(e) { setMsg('#ghMsg',e.message,'err'); } finally{ b.disabled=false; }
+});
+async function fishViaGitHub(action, data, msgId){
+  const {api,headers}=githubConfig();
+  const id = 'av'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+  let res;
+  try {
+    res=await fetch(api+'/dispatches',{
+      method:'POST',headers:{...headers,'Content-Type':'application/json'},
+      body:JSON.stringify({event_type:action,client_payload:{id,...data}})
+    });
+  } catch { throw new Error('Não foi possível conectar ao GitHub. Confira a internet.'); }
+  if (res.status===401) throw new Error('Token GitHub inválido.');
+  if (res.status===403 || res.status===404) throw new Error('GitHub bloqueou a solicitação. Confira acesso ao repositório e Contents: Read and write.');
+  if (!res.ok) throw new Error('Erro '+res.status+' ao iniciar ação no GitHub.');
+  const ref='voz-'+id, t0=Date.now(), seconds=action==='voz'?240:150;
+  const raw={...headers,Accept:'application/vnd.github.raw'};
+  const drop=()=>fetch(api+'/git/refs/heads/'+ref,{method:'DELETE',headers}).catch(()=>{});
+  while(Date.now()-t0 < seconds*1000){
+    await new Promise(ok=>setTimeout(ok,3500));
+    setMsg(msgId, (action==='voz'?'Gerando voz':'Buscando vozes')+' pelo GitHub… '+Math.floor((Date.now()-t0)/1000)+'s');
+    let f;
+    try{ f=await fetch(api+'/contents/'+(action==='voz'?'voz.mp3':'vozes.json')+'?ref='+ref,
+        {headers:raw,cache:'no-store'}); }
+    catch{ continue; }
+    if(f.status===200){
+      try {
+        if(action==='voz'){
+          const blob=await f.blob();
+          if(blob.size<64 || /json/i.test(blob.type)) throw new Error('O GitHub não retornou áudio MP3. Confira o workflow.');
+          return new Blob([blob],{type:'audio/mpeg'});
+        }
+        const txt=await f.text();
+        const j=JSON.parse(txt);
+        if(!j || typeof j!=='object') throw new Error('Resposta inválida da busca de vozes.');
+        return j;
+      } finally{ drop(); }
+    }
+    let e;
+    try{ e=await fetch(api+'/contents/erro.txt?ref='+ref,{headers:raw,cache:'no-store'}); }
+    catch{continue;}
+    if(e.ok){
+      const txt=await e.text(); drop();
+      const code=(txt.split('\n')[0]||'').trim();
+      let message='';try{message=JSON.parse(txt.slice(txt.indexOf('{'))).message||'';}catch{}
+      if(code==='CONFIG') throw new Error('Falta configurar o Secret FISH_AUDIO_API_KEY em Settings → Secrets and variables → Actions no GitHub.');
+      if(code==='401' || code==='403') throw new Error('Chave Fish Audio inválida ou sem permissão. Atualize o Secret no GitHub.');
+      if(code==='402') throw new Error('Sem créditos para esse modelo. Selecione S2.1 grátis ou confira a conta Fish Audio.');
+      if(code==='404') throw new Error('Voz não encontrada ou sem acesso no Fish Audio.');
+      if(code==='429') throw new Error('Fish Audio atingiu o limite de requisições. Tente novamente mais tarde.');
+      throw new Error('Fish Audio: erro '+(code||'desconhecido')+(message?' — '+message.slice(0,160):''));
+    }
+    if(f.status===401 || f.status===403) throw new Error('Acesso negado ao resultado no GitHub.');
   }
-  throw new Error('O GitHub demorou demais. Abra o repositório Avatar-studio, aba Actions, e veja se a tarefa "Gerar voz" rodou.');
+  throw new Error('GitHub não entregou o resultado a tempo. Abra a aba Actions do seu repositório e verifique Fish Audio - voz e busca.');
 }
 
 $('#btnFishSite').addEventListener('click', async () => {
@@ -891,28 +1147,34 @@ $('#btnFishSite').addEventListener('click', async () => {
 });
 
 /* busca de vozes no Fish Audio pelo nome */
-const NO_POLITICS = /\b(lula|bolsonaro|dilma|haddad|alckmin|tarc[ií]sio|janja|moraes|boulos|nikolas|ciro gomes|temer|marina silva|trump|biden)\b/i;
 let voiceAudio = null;
 async function searchVoices(mine){
-  const key = $('#fishKey').value.trim();
-  if (!key){ document.querySelector('#s4 details').open = true; return setMsg('#voiceMsg','Coloque a chave da API do Fish Audio (embaixo, em "Chave da API do Fish Audio").','err'); }
-  const q = $('#voiceSearch').value.trim();
-  if (!mine && !q) return setMsg('#voiceMsg','Digite um nome para buscar.','err');
-  const params = new URLSearchParams({ page_size:'30', sort_by:'task_count' });
-  if (mine) params.set('self','true'); else params.set('title', q);
-  setMsg('#voiceMsg','Buscando…'); $('#voiceList').innerHTML = '';
-  try {
-    const res = await fetch('https://api.fish.audio/model?' + params, { headers:{ 'Authorization':'Bearer ' + key } });
-    if (res.status === 401) throw new Error('Chave do Fish Audio recusada. Confira a chave.');
-    if (!res.ok) throw new Error('O Fish Audio respondeu erro ' + res.status + '.');
-    const j = await res.json();
-    const all = j.items || [], items = all.filter(v => !NO_POLITICS.test((v.title || '') + ' ' + (v.description || '')));
-    if (!items.length) return setMsg('#voiceMsg', mine ? 'Você ainda não tem vozes próprias no Fish Audio.' : 'Nenhuma voz com esse nome. Tente outra palavra.', 'err');
-    setMsg('#voiceMsg', `${items.length} vozes encontradas. Toque para escolher.` + (all.length > items.length ? ' Vozes de políticos ficam de fora.' : ''), 'ok');
+  const key=$('#fishKey').value.trim(), viaGH=!!$('#ghToken').value.trim();
+  if(!key && !viaGH) { $('#ghBox').open=true; return setMsg('#voiceMsg','Configure a conexão GitHub ou a chave Fish Audio.','err'); }
+  const q=$('#voiceSearch').value.trim();
+  if(!mine && !q) return setMsg('#voiceMsg','Digite o nome de uma voz para buscar.','err');
+  const b=$('#btnVoiceSearch'), m=$('#btnMyVoices');
+  b.disabled=m.disabled=true;
+  setMsg('#voiceMsg',viaGH?'Solicitando busca pelo GitHub…':'Buscando vozes…');
+  $('#voiceList').innerHTML='';
+  try{
+    let j;
+    if(viaGH) j=await fishViaGitHub('vozes',{mode:mine?'mine':'search',query:q},'#voiceMsg');
+    else{
+      const params=new URLSearchParams({page_size:'30',sort_by:'task_count'});
+      if(mine) params.set('self','true'); else params.set('title',q);
+      const res=await fetch('https://api.fish.audio/model?'+params,{headers:{Authorization:'Bearer '+key}});
+      if(res.status===401) throw new Error('Chave Fish Audio recusada.');
+      if(!res.ok) throw new Error('Fish Audio respondeu erro '+res.status+'.');
+      j=await res.json();
+    }
+    const items=Array.isArray(j.items)?j.items:(Array.isArray(j.models)?j.models:[]);
+    if(!items.length) return setMsg('#voiceMsg',mine?'Nenhuma voz própria encontrada.':'Nenhuma voz com esse nome. Tente outra palavra.');
+    setMsg('#voiceMsg',items.length+' vozes encontradas. Toque para ouvir e selecionar. Utilize vozes autorizadas.','ok');
     renderVoices(items);
-  } catch (e) {
-    setMsg('#voiceMsg', e instanceof TypeError ? 'O Fish Audio não aceitou a conexão direta do celular. Copie o ID no site do Fish Audio e cole no campo abaixo.' : e.message, 'err');
-  }
+  } catch(e){
+    setMsg('#voiceMsg',e instanceof TypeError?'Conexão bloqueada. Configure o GitHub para buscar vozes sem ligação direta ao Fish Audio.':e.message,'err');
+  } finally{b.disabled=m.disabled=false;}
 }
 function renderVoices(items){
   const box = $('#voiceList'); box.innerHTML = '';
@@ -1092,7 +1354,7 @@ $('#btnTalkPreview').addEventListener('click', async () => {
 $('#btnTalk').addEventListener('click', async () => {
   const audioFile = talkAudioFile();
   if (!audioFile) return setMsg('#talkMsg', 'Gere a voz no passo 4 ou escolha o arquivo de áudio acima.', 'err');
-  if (!$('#dreamOk').checked) return setMsg('#talkMsg', 'Marque a confirmação de que o rosto é de um avatar criado por IA.', 'err');
+  if (!$('#dreamOk').checked) return setMsg('#talkMsg', 'Confirme que você tem autorização para usar o rosto e a voz.', 'err');
   if (!window.MediaRecorder) return setMsg('#talkMsg', 'Este navegador não grava vídeo. Use o Chrome ou o Edge.', 'err');
   const b = $('#btnTalk'); b.disabled = true; setBar('#talkBar', 0.02);
   const Ctx = window.AudioContext || window.webkitAudioContext, ac = new Ctx();
@@ -1137,82 +1399,201 @@ $('#btnTalk').addEventListener('click', async () => {
   ac.close?.(); setBar('#talkBar', null); b.disabled = false;
 });
 
-/* ---------- 6b. tirar o fundo de uma foto ---------- */
+/* ---------- 6b. RECORTE HD DE FOTOS, SEM CHAVES EXTERNAS ---------- */
+/* A IA recebe uma cópia reduzida só para inferir o recorte. O PNG é sempre
+   composto com os pixels da FOTO ORIGINAL, não com a miniatura. */
 const photoSegs = {};
 async function getPhotoSeg(delegate){
   if (photoSegs[delegate]) return photoSegs[delegate];
   const { ImageSegmenter, FilesetResolver } = await import(MP);
   const fs = await FilesetResolver.forVisionTasks(MP + '/wasm');
-  photoSegs[delegate] = await ImageSegmenter.createFromOptions(fs, { baseOptions:{ modelAssetPath: MULTI_MODEL, delegate }, runningMode:'IMAGE', outputCategoryMask:false, outputConfidenceMasks:true });
-  return photoSegs[delegate];
+  return photoSegs[delegate] = await ImageSegmenter.createFromOptions(fs, { baseOptions: { modelAssetPath: MULTI_MODEL, delegate }, runningMode:'IMAGE', outputCategoryMask:false, outputConfidenceMasks:true });
 }
-/* remove o fundo de qualquer imagem: primeiro com o @imgly/background-removal (roda no aparelho), depois MediaPipe */
 const BG_WORKER = `
 let mod = null;
 onmessage = async (e) => {
   try {
     if (!mod) mod = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm');
-    const out = await mod.removeBackground(e.data.blob, { model:'isnet_quint8', output:{ format:'image/png' },
-      progress: (k, cur, tot) => { if (tot) postMessage({ type:'progress', p: cur / tot }); } });
-    postMessage({ type:'done', blob: out });
-  } catch (err) { postMessage({ type:'error', msg: String(err && err.message || err) }); }
+    const result = await mod.removeBackground(e.data.blob, { model:e.data.model, output:{format:'image/png'},
+      progress: (key, current, total) => { if(total > 0) postMessage({type:'progress',p:current/total}); } });
+    postMessage({type:'done',blob:result});
+  } catch(err){ postMessage({type:'error',msg:String(err?.message || err)}); }
 };`;
-let bgWorker = null;
-function removeBgInWorker(blob, onMsg){
-  if (!bgWorker) bgWorker = new Worker(URL.createObjectURL(new Blob([BG_WORKER], { type:'text/javascript' })), { type:'module' });
-  return new Promise((res, rej) => {
-    const to = setTimeout(() => { bgWorker.terminate(); bgWorker = null; rej(new Error('demorou demais')); }, 180000);
-    bgWorker.onmessage = ({ data:d }) => {
-      if (d.type === 'progress') onMsg?.(`Baixando o removedor de fundo (só na primeira vez)… ${Math.round(d.p * 100)}%`);
-      else if (d.type === 'done'){ clearTimeout(to); res(d.blob); }
-      else { clearTimeout(to); rej(new Error(d.msg)); }
+let bgWorker = null, bgRunning = false;
+function removeBgInWorker(blob, model, onMsg){
+  if (bgRunning) return Promise.reject(new Error('Já existe um recorte em andamento.'));
+  if (!bgWorker) bgWorker = new Worker(URL.createObjectURL(new Blob([BG_WORKER], {type:'text/javascript'})),{type:'module'});
+  bgRunning = true;
+  return new Promise((resolve,reject)=>{
+    const finish = (err,data,reset=false) => {
+      clearTimeout(timeout); bgRunning=false; bgWorker.onmessage=null; bgWorker.onerror=null;
+      if(reset){ bgWorker.terminate(); bgWorker=null; }
+      err ? reject(err) : resolve(data);
     };
-    bgWorker.onerror = e => { clearTimeout(to); bgWorker = null; rej(new Error(e.message || 'erro no removedor')); };
-    bgWorker.postMessage({ blob });
+    const timeout = setTimeout(()=>finish(new Error('O processamento demorou demais. Tente o modo Leve.'),null,true),180000);
+    bgWorker.onmessage=({data:d})=>{
+      if(d.type==='progress') onMsg?.(`Preparando IA local… ${Math.round(100*Math.min(1,d.p))}%`);
+      else if(d.type==='done') finish(null,d.blob);
+      else finish(new Error(d.msg||'Falha ao criar máscara'),null,true);
+    };
+    bgWorker.onerror=e=>finish(new Error(e.message||'Falha ao carregar o recorte local'),null,true);
+    bgWorker.postMessage({blob,model});
   });
 }
-async function cutPerson(src, onMsg){
-  S.heavy = true;
-  try {
-    onMsg?.('Preparando o removedor de fundo…');
-    const iw = src.naturalWidth || src.width, ih = src.naturalHeight || src.height;
-    const sc = Math.min(1, 1280 / Math.max(iw, ih)), c = document.createElement('canvas');
-    c.width = Math.max(1, Math.round(iw * sc)); c.height = Math.max(1, Math.round(ih * sc)); c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
-    const blob = await new Promise(r => c.toBlob(r, 'image/png'));
-    const outBlob = await removeBgInWorker(blob, onMsg);
-    onMsg?.('Quase pronto…');
-    const bmp = await createImageBitmap(outBlob), oc = document.createElement('canvas'); oc.width = bmp.width; oc.height = bmp.height; oc.getContext('2d').drawImage(bmp, 0, 0);
-    return oc;
-  } catch (e) {
-    console.warn('imgly falhou, usando MediaPipe', e);
-    onMsg?.('Usando o recorte de pessoas…');
-    return cutPersonMP(src);
-  } finally { S.heavy = false; }
+function sizeForCut(src){
+  const w=src.naturalWidth||src.width,h=src.naturalHeight||src.height;
+  if(!w || !h) throw new Error('Imagem sem dimensões válidas.');
+  // O limite de pixels evita o fechamento do Chrome Android por falta de memória.
+  const maxPx=LOW_MEMORY ? 5000000 : 11000000, maxSide=LOW_MEMORY ? 3200 : 4600;
+  const k=Math.min(1,maxSide/Math.max(w,h),Math.sqrt(maxPx/(w*h)));
+  return {w:Math.max(1,Math.round(w*k)),h:Math.max(1,Math.round(h*k)),originalW:w,originalH:h};
 }
-async function cutPersonMP(src){
-  const iw = src.naturalWidth || src.width, ih = src.naturalHeight || src.height;
-  const sc = Math.min(1, 1280 / Math.max(iw, ih)), W = Math.max(1, Math.round(iw * sc)), H = Math.max(1, Math.round(ih * sc));
-  const work = document.createElement('canvas'); work.width = W; work.height = H; work.getContext('2d').drawImage(src, 0, 0, W, H);
-  let m;
-  try { m = await computeMask('foto', work, Math.random()); }
-  catch (e) { throw new Error('O recorte não carregou neste aparelho. Confira a internet e tente de novo.'); }
-  const outc = document.createElement('canvas'); outc.width = W; outc.height = H;
-  const o = outc.getContext('2d'); o.drawImage(work, 0, 0);
-  o.globalCompositeOperation = 'destination-in'; o.imageSmoothingEnabled = true; o.drawImage(m.c, 0, 0, W, H); o.globalCompositeOperation = 'source-over';
-  return outc;
+function cutOpts(){
+  return { quality:$('#cutQuality').value, edge:Number($('#cutEdge').value), feather:Number($('#cutFeather').value), dehalo:$('#cutDehalo').checked };
 }
-$('#cutInput').addEventListener('change', async e => {
-  const f = e.target.files[0]; if (!f) return;
-  $('#cutName').textContent = f.name; setMsg('#cutMsg', 'Tirando o fundo…'); $('#cutDownload').hidden = true;
-  try {
-    const img = await loadImage(f), cut = await cutPerson(img, m => setMsg('#cutMsg', m));
-    const out = $('#cutCanvas'); out.width = cut.width; out.height = cut.height; out.hidden = false;
-    out.getContext('2d').drawImage(cut, 0, 0);
-    out.toBlob(bl => { const a = $('#cutDownload'); a.href = URL.createObjectURL(bl); a.download = f.name.replace(/\.[^.]+$/, '') + '-sem-fundo.png'; a.hidden = false; }, 'image/png');
-    setMsg('#cutMsg', 'Pronto, fundo removido.', 'ok');
-  } catch (err) { setMsg('#cutMsg', err.message || 'Não consegui tirar o fundo dessa foto.', 'err'); }
+function fitForModel(d, quality){
+  const max=quality==='precise'?1920:quality==='balanced'?1536:1024;
+  const k=Math.min(1,max/Math.max(d.w,d.h));
+  return {w:Math.max(1,Math.round(d.w*k)),h:Math.max(1,Math.round(d.h*k))};
+}
+function canvasFromSource(src,w,h){
+  const c=document.createElement('canvas'); c.width=w;c.height=h;
+  const g=c.getContext('2d',{alpha:true});g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
+  g.drawImage(src,0,0,w,h);return c;
+}
+function toPngBlob(canvas){
+  return new Promise((resolve,reject)=>canvas.toBlob(x=>x?resolve(x):reject(new Error('Não foi possível preparar a imagem.')),'image/png'));
+}
+function imageFromBlob(blob){
+  if(window.createImageBitmap) return createImageBitmap(blob);
+  return new Promise((res,rej)=>{
+    const url=URL.createObjectURL(blob),im=new Image();
+    im.onload=()=>{URL.revokeObjectURL(url);res(im)};
+    im.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('PNG do recorte inválido.'))}; im.src=url;
+  });
+}
+/* Refinamento da máscara: antialiasing, controle de borda e redução de halo.
+   A cor da pessoa vem da foto original, o modelo só fornece alfa. */
+function compositeCut(src,mask,d,opts){
+  const w=d.w,h=d.h, result=canvasFromSource(src,w,h),g=result.getContext('2d',{willReadFrequently:true});
+  const alphaCanvas=document.createElement('canvas'); alphaCanvas.width=w;alphaCanvas.height=h;
+  const ag=alphaCanvas.getContext('2d',{willReadFrequently:true});
+  ag.imageSmoothingEnabled=true; ag.imageSmoothingQuality='high';
+  if(opts.feather>0) ag.filter=`blur(${opts.feather}px)`;
+  ag.drawImage(mask,0,0,w,h); ag.filter='none';
+  const matte=ag.getImageData(0,0,w,h).data;
+  const rgba=g.getImageData(0,0,w,h), pix=rgba.data;
+  const edge=opts.edge*10, limit=w*h;
+  // Edge alpha is corrected without resizing RGB pixels; RGB remains pixel-sharp.
+  for(let i=0,j=0;i<limit;i++,j+=4){
+    let a=matte[j+3]+edge;
+    a=a<=4?0:a>=251?255:a;
+    pix[j+3]=a;
+    if(a===0){pix[j]=pix[j+1]=pix[j+2]=0;}
+  }
+  if(opts.dehalo){
+    // Borrow nearby opaque foreground colors ONLY at semitransparent borders.
+    // Check a few neighboring pixels; leave hair strands and facial features intact.
+    const offsets=[-4,4,-8,8,-w*4,w*4];
+    for(let y=2;y<h-2;y++) for(let x=2;x<w-2;x++){
+      const j=(y*w+x)*4, a=pix[j+3];
+      if(a<35||a>225) continue;
+      let best=-1;
+      for(const off of offsets){ const n=j+off;if(pix[n+3]>246){best=n;break;} }
+      if(best<0) continue;
+      const mix=Math.min(.38,Math.max(0,(225-a)/255*.45));
+      for(let c=0;c<3;c++) pix[j+c]=Math.round(pix[j+c]*(1-mix)+pix[best+c]*mix);
+    }
+  }
+  g.putImageData(rgba,0,0);
+  alphaCanvas.width=1;alphaCanvas.height=1; // release scratch buffers
+  return result;
+}
+/* Fallback MediaPipe por classe: classe zero é o FUNDO.
+   A máscara é suavizada e aplicada aos pixels originais. */
+async function photoMatteFallback(src,modelCanvas){
+  try{
+    const seg=await getPhotoSeg('CPU'),r=seg.segment(modelCanvas);
+    const bg=r.confidenceMasks?.[0]; if(!bg) throw new Error('Máscara vazia');
+    const a=bg.getAsFloat32Array(),mw=bg.width,mh=bg.height;
+    const mask=document.createElement('canvas');mask.width=mw;mask.height=mh;
+    const cx=mask.getContext('2d'),im=cx.createImageData(mw,mh);
+    for(let i=0;i<mw*mh;i++){
+      const p=i*4;im.data[p]=im.data[p+1]=im.data[p+2]=255;
+      im.data[p+3]=Math.max(0,Math.min(255,Math.round((1-a[i])*255)));
+    }
+    cx.putImageData(im,0,0);r.close?.();return mask;
+  }catch(e){
+    // Last resort only: older video selfie mask, never a hard straight-line crop.
+    const m=await computeMask('foto-hd',modelCanvas,performance.now());return m.c;
+  }
+}
+async function cutPerson(src,onMsg,keepMatte=false){
+  if(S.heavy) throw new Error('Já existe uma operação pesada em andamento.');
+  S.heavy=true;
+  try{
+    const opts=cutOpts(),d=sizeForCut(src),f=fitForModel(d,opts.quality);
+    const modelCanvas=canvasFromSource(src,f.w,f.h);
+    onMsg?.('Analisando o contorno da pessoa… sem enviar sua imagem para uma API.');
+    let mask=null,method='IS-Net';
+    const models=opts.quality==='precise'?['isnet_fp16','isnet_quint8']:['isnet_quint8'];
+    for(const model of models){
+      try{
+        const blob=await toPngBlob(modelCanvas);
+        const outBlob=await removeBgInWorker(blob,model,onMsg);
+        mask=await imageFromBlob(outBlob);break;
+      }catch(e){console.warn('Recorte local',model,e);onMsg?.('Tentando o próximo modo de recorte…');}
+    }
+    if(!mask){method='MediaPipe (alternativo)';onMsg?.('Usando o recorte alternativo no aparelho…');mask=await photoMatteFallback(src,modelCanvas);}
+    onMsg?.('Refinando cabelos, contornos e transparência…');
+    await new Promise(r=>requestAnimationFrame(r));
+    const canvas=compositeCut(src,mask,d,opts);
+    modelCanvas.width=1;modelCanvas.height=1;
+    if(keepMatte) return {canvas,matte:{src,mask,d,method}};
+    mask.close?.(); // libera memória usada pelo resultado intermediário
+    return canvas;
+  } finally {S.heavy=false;}
+}
+let lastCut=null,cutFile=null,cutSeq=0,cutDownloadUrl=null;
+async function drawCutResult(canvas,name){
+  const out=$('#cutCanvas');out.width=canvas.width;out.height=canvas.height;out.hidden=false;
+  out.getContext('2d').drawImage(canvas,0,0);
+  const blob=await toPngBlob(out),url=URL.createObjectURL(blob);
+  if(cutDownloadUrl) URL.revokeObjectURL(cutDownloadUrl);
+  cutDownloadUrl=url;
+  const a=$('#cutDownload');a.href=url;a.download=(name||'foto').replace(/\.[^.]+$/,'')+'-sem-fundo.png';a.hidden=false;
+  $('#btnCutAdjust').disabled=false;$('#btnCutReprocess').disabled=false;
+  const s=sizeForCut(lastCut.src);
+  $('#cutInfo').textContent=`PNG sem perda de qualidade • ${canvas.width} × ${canvas.height} px${s.w<s.originalW||s.h<s.originalH?' (limite seguro de memória do aparelho)':''} • ${lastCut.method}`;
+}
+async function startPhotoCut(file){
+  if(!file)return;
+  const id=++cutSeq;
+  cutFile=file;lastCut=null;$('#cutName').textContent=file.name;
+  $('#cutDownload').hidden=true;$('#btnCutAdjust').disabled=true;$('#btnCutReprocess').disabled=true;
+  setMsg('#cutMsg','Preparando o recorte HD…');
+  try{
+    const img=await loadImage(file),res=await cutPerson(img,m=>setMsg('#cutMsg',m),true);
+    if(id!==cutSeq)return;
+    lastCut=res.matte; await drawCutResult(res.canvas,file.name);
+    setMsg('#cutMsg','Recorte HD pronto. Ajuste a borda sem baixar o modelo novamente.','ok');
+  }catch(err){setMsg('#cutMsg',err.message||'Não consegui recortar a foto.','err');}
+}
+$('#cutInput').addEventListener('change',e=>startPhotoCut(e.target.files[0]));
+$('#btnCutReprocess').addEventListener('click',()=>startPhotoCut(cutFile));
+$('#btnCutAdjust').addEventListener('click',async()=>{
+  if(!lastCut)return;
+  const b=$('#btnCutAdjust');b.disabled=true;setMsg('#cutMsg','Aplicando ajustes no contorno…');
+  try{
+    await new Promise(r=>requestAnimationFrame(r));
+    const c=compositeCut(lastCut.src,lastCut.mask,lastCut.d,cutOpts());
+    await drawCutResult(c,cutFile?.name||'foto.png');
+    setMsg('#cutMsg','Contorno atualizado sem reprocessar a IA.','ok');
+  }catch(e){setMsg('#cutMsg',e.message,'err');}
+  b.disabled=false;
 });
-
+$('#cutFeather').addEventListener('input',()=>{$('#cutFeatherVal').textContent=Number($('#cutFeather').value).toFixed(1).replace('.',',')+' px'});
+$('#cutFeatherVal').textContent=Number($('#cutFeather').value).toFixed(1).replace('.',',')+' px';
 /* ---------- 5. DreamAPI: sincronizar a boca ---------- */
 const DREAM = 'https://api.newportai.com/api';
 $('#dreamAudio').addEventListener('change', e => { const f = e.target.files[0]; if (!f) return; dreamAudioFile = f; $('#dreamAudioName').textContent = f.name; });
@@ -1249,7 +1630,7 @@ $('#btnDream').addEventListener('click', async () => {
   const audio = dreamAudioFile || (S.ttsBlob ? new File([S.ttsBlob], 'voz.mp3', { type:'audio/mpeg' }) : null);
   if (!S.srcFile) return setMsg('#dreamMsg','Escolha o vídeo do avatar no passo 1.','err');
   if (!audio) return setMsg('#dreamMsg','Gere a voz no passo 4 ou escolha o arquivo de áudio acima.','err');
-  if (!$('#dreamOk').checked) return setMsg('#dreamMsg','Marque a confirmação de que o rosto é de um avatar criado por IA.','err');
+  if (!$('#dreamOk').checked) return setMsg('#dreamMsg','Confirme que você tem autorização para usar o rosto e a voz.','err');
   if (!$('#dreamKey').value.trim()){ $('#dreamKeyBox').open = true; return setMsg('#dreamMsg','Coloque a chave da DreamAPI.','err'); }
   const b = $('#btnDream'); b.disabled = true; setBar('#dreamBar', 0.05);
   try {
@@ -1300,7 +1681,8 @@ async function switchToCpu(){
 }
 
 function loadWorkVideo(file){
-  vid.src = URL.createObjectURL(file);
+  if (vid.dataset.objectUrl) URL.revokeObjectURL(vid.dataset.objectUrl);
+  vid.dataset.objectUrl = URL.createObjectURL(file); vid.src = vid.dataset.objectUrl;
   vid.onloadeddata = () => { vid.currentTime = 0.05; };
   vid.onseeked = () => { if (!S.playing && !S.exporting) renderFrame(); if (needsSeg()) getSegmenter().catch(()=>{}); };
   $('#btnPlay').disabled = false; $('#btnCaps').disabled = false; $('#btnCapsListen').disabled = false;
@@ -1425,7 +1807,7 @@ function getSegmenter(){
   segLoading = (async () => {
     if (!window.SelfieSegmentation) await loadScript(SS + 'selfie_segmentation.js');
     const ss = new window.SelfieSegmentation({ locateFile: f => SS + f });
-    ss.setOptions({ modelSelection: 1, selfieMode: false });
+    ss.setOptions({ modelSelection: LOW_MEMORY ? 0 : 1, selfieMode: false });
     let pending = null;
     ss.onResults(r => {
       const job = pending; pending = null; if (!job) return;
@@ -1506,6 +1888,15 @@ function renderFrame(){
   if (S.sel && !S.exporting) drawSelection(octx, S.sel);
   drawCaption(t);
 }
+/* Blur only the segmentation alpha edge (not the person's RGB pixels). */
+function applySoftVideoMask(ctx,mask,x,y,w,h){
+  ctx.save();
+  ctx.globalCompositeOperation='destination-in';
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  ctx.filter='blur('+(LOW_MEMORY?'0.7':'1')+'px)';
+  ctx.drawImage(mask,x,y,w,h);
+  ctx.restore();
+}
 const olC = document.createElement('canvas'); olC.width = OUT_W; olC.height = OUT_H; const olctx = olC.getContext('2d');
 /* "Sem fundo": quadriculado na prévia; no vídeo exportado vira verde (chroma) porque MP4 não guarda transparência */
 function paintBgInto(ctx){
@@ -1523,9 +1914,7 @@ function drawPerson(){
   if (!mk.ready) { octx.drawImage(vid, x, y, w, h); return; }
   pctx.globalCompositeOperation = 'source-over'; pctx.clearRect(0,0,OUT_W,OUT_H);
   pctx.drawImage(vid, x, y, w, h);
-  pctx.globalCompositeOperation = 'destination-in';
-  pctx.imageSmoothingEnabled = true; pctx.drawImage(mk.c, x, y, w, h);
-  pctx.globalCompositeOperation = 'source-over';
+  applySoftVideoMask(pctx, mk.c, x, y, w, h);
   if ($('#olOn').checked){
     const r = Number($('#olWidth').value) / 2, HW = OUT_W / 2, HH = OUT_H / 2;
     olctx.globalCompositeOperation = 'source-over'; olctx.clearRect(0, 0, HW, HH);
@@ -1544,7 +1933,7 @@ function drawLayer(ctx, L){
   if (L.anim){ const tt = live ? t : performance.now() / 1000; L.anim.goToAndStop(Math.floor(tt * L.fr) % Math.max(1, L.frames), true); }
   if (L.gif && L.gifTotal){ const tt = (live ? t : performance.now() / 1000) % L.gifTotal; let f = L.gif[0]; for (const fr of L.gif){ if (fr.t0 <= tt) f = fr; else break; } L.img = f.bmp; }
   const [w, h] = layerSize(L);
-  ctx.save(); ctx.globalAlpha = L.op; ctx.translate(L.x, L.y); ctx.rotate(L.rot * Math.PI / 180);
+  ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.globalAlpha = L.op; ctx.translate(L.x, L.y); ctx.rotate(L.rot * Math.PI / 180);
   ctx.drawImage(L.img, -w / 2, -h / 2, w, h); ctx.restore();
 }
 function drawSelection(ctx, L){
@@ -1683,7 +2072,7 @@ async function searchPhotos(){
       const b = document.createElement('button'); b.type = 'button'; b.title = (it.title || '') + (it.creator ? ' — ' + it.creator : '');
       const im = document.createElement('img'); im.loading = 'lazy'; im.alt = ''; im.src = it.thumbnail; b.append(im);
       b.addEventListener('click', async () => {
-        try { addLayer(await loadURL(it.thumbnail), (it.title || 'Foto').slice(0, 40), { s: 0.6, credit: `${it.creator || 'autor desconhecido'} (${(it.license || '').toUpperCase()})` }); setMsg('#photoMsg', `Crédito da foto: ${it.creator || 'autor desconhecido'}, licença ${(it.license || '').toUpperCase()} ${it.license_version || ''}.`, 'ok'); }
+        try { addLayer(await loadURL(it.url || it.thumbnail).catch(() => loadURL(it.thumbnail)), (it.title || 'Foto').slice(0, 40), { s: 0.6, credit: `${it.creator || 'autor desconhecido'} (${(it.license || '').toUpperCase()})` }); setMsg('#photoMsg', `Crédito da foto: ${it.creator || 'autor desconhecido'}, licença ${(it.license || '').toUpperCase()} ${it.license_version || ''}.`, 'ok'); }
         catch { setMsg('#photoMsg', 'Essa foto não pôde ser usada. Escolha outra.', 'err'); }
       });
       $('#photoList').append(b);
@@ -1904,7 +2293,17 @@ function renderClips(){
     if (c.kind !== 'avatar'){
       const lb = document.createElement('label'); lb.style.cssText = 'flex-direction:row;align-items:center;gap:8px';
       const cb = document.createElement('input'); cb.type = 'checkbox'; cb.id = c.id + '-rm'; cb.checked = !!c.rmbg;
-      cb.addEventListener('change', () => { c.rmbg = cb.checked; if (cb.checked) getClipSeg().catch(() => setMsg('#tlInfo', 'Não consegui carregar o recorte de fundo. Confira a internet.', 'err')); });
+      cb.addEventListener('change', async () => {
+        c.rmbg=cb.checked;
+        if(c.kind==='image'){
+          if(!cb.checked){c.cutImg=null;updateTlInfo();return;}
+          cb.disabled=true;setMsg('#tlInfo','Recortando foto da montagem com qualidade HD…');
+          try{c.cutImg=await cutPerson(c.el,m=>setMsg('#tlInfo',m));setMsg('#tlInfo','Recorte HD da foto pronto.','ok');}
+          catch(e){c.rmbg=false;cb.checked=false;setMsg('#tlInfo',e.message,'err');}
+          finally{cb.disabled=false;}
+        }else if(cb.checked) getClipSeg().catch(()=>setMsg('#tlInfo','Não consegui carregar o recorte de vídeo. Confira a internet.','err'));
+        // Não apague a mensagem de sucesso do recorte com o resumo de duração.
+      });
       lb.append(cb, document.createTextNode('Remover o fundo (usa o fundo escolhido no passo 6)')); f.append(lb);
     }
     if (i < S.clips.length - 1){
@@ -1937,18 +2336,20 @@ function drawWithoutBg(ctx, key){
   const m = slot(key);
   if (!m.ready){ ctx.drawImage(cutFr, 0, 0); return; }
   paintBgInto(ctx);
-  cutFx.globalCompositeOperation = 'destination-in'; cutFx.imageSmoothingEnabled = true; cutFx.drawImage(m.c, 0, 0, OUT_W, OUT_H); cutFx.globalCompositeOperation = 'source-over';
+  applySoftVideoMask(cutFx, m.c, 0, 0, OUT_W, OUT_H);
   ctx.drawImage(cutFr, 0, 0);
 }
 function drawClipFrame(g, it, lt){
+  g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
   const c = it.c;
   if (c.kind === 'video'){ const v = c.el; if (v.readyState >= 2){ const [x, y, w, h] = cover(v.videoWidth, v.videoHeight, OUT_W, OUT_H); g.drawImage(v, x, y, w, h); } }
-  else { const im = c.el, k = 1 + 0.07 * Math.min(1, lt / it.len); const [x, y, w, h] = cover(im.naturalWidth, im.naturalHeight, OUT_W, OUT_H); g.drawImage(im, OUT_W / 2 + (x - OUT_W / 2) * k, OUT_H / 2 + (y - OUT_H / 2) * k, w * k, h * k); }
+  else { const im = (c.cutImg && c.rmbg ? c.cutImg : c.el), k = 1 + 0.07 * Math.min(1, lt / it.len); const [x, y, w, h] = cover(im.naturalWidth, im.naturalHeight, OUT_W, OUT_H); g.drawImage(im, OUT_W / 2 + (x - OUT_W / 2) * k, OUT_H / 2 + (y - OUT_H / 2) * k, w * k, h * k); }
 }
 function drawClip(ctx, it, lt){
   const c = it.c; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, OUT_W, OUT_H);
   if (c.kind === 'avatar'){ renderFrame(); ctx.drawImage(out, 0, 0); return; }
-  if (!c.rmbg){ drawClipFrame(ctx, it, lt); return; }
+  if (c.kind==='image' && c.cutImg && c.rmbg){ paintBgInto(ctx); drawClipFrame(ctx,it,lt); return; }
+  if (!c.rmbg || c.kind==='image'){ drawClipFrame(ctx, it, lt); return; }
   cutFx.clearRect(0, 0, OUT_W, OUT_H); drawClipFrame(cutFx, it, lt);
   if (!S.offline){ const m = slot(c.id); if (!m.busy && segmenter){ const sg = m.src.getContext('2d'); sg.clearRect(0, 0, OUT_W, OUT_H); sg.drawImage(cutFr, 0, 0); requestMask(c.id, m.src, performance.now()); } }
   drawWithoutBg(ctx, c.id);
@@ -1972,7 +2373,7 @@ async function runTimeline(record, onProgress){
   S.exporting = true; vid.pause();
   try { for (const it of P) if (it.c.kind !== 'image'){ it.c.el.muted = false; try { await it.c.el.play(); } catch {} it.c.el.pause(); } } catch {}
   if (P.some(it => it.c.kind === 'avatar') && needsSeg()) await getSegmenter().catch(() => {});
-  if (P.some(it => it.c.rmbg)) await getClipSeg().catch(() => {});
+  if (P.some(it => it.c.rmbg && it.c.kind !== 'image')) await getClipSeg().catch(() => {});
   await document.fonts.load('900 60px Montserrat').catch(() => {});
   for (const it of P) if (it.c.kind !== 'image') await seekTo(it.c.el, it.c.a);
   const run = { stop:false }; tlRun = run;
@@ -2066,7 +2467,7 @@ async function exportOffline(onProgress){
   S.exporting = true; S.offline = true; vid.pause(); P.forEach(it => { if (it.c.kind !== 'image') it.c.el.pause(); });
   try {
     if (P.some(it => it.c.kind === 'avatar') && needsSeg()) await getSegmenter().catch(() => onProgress(0, 'O recorte de fundo não carregou; o vídeo sai sem recorte.'));
-    if (P.some(it => it.c.rmbg)) await getClipSeg().catch(() => {});
+    if (P.some(it => it.c.rmbg && it.c.kind !== 'image')) await getClipSeg().catch(() => {});
     await document.fonts.load('900 60px Montserrat').catch(() => {});
     onProgress(0, 'Preparando o som…');
     const audio = acodec ? await mixAudio(P, total) : null;
@@ -2097,7 +2498,7 @@ async function exportOffline(onProgress){
         for (const it of act){
           try {
             if (it.c.kind === 'avatar' && needsSeg()) await computeMask('avatar', vid, t);
-            else if (it.c.rmbg){ const m = slot(it.c.id), sg = m.src.getContext('2d'); sg.clearRect(0, 0, OUT_W, OUT_H); drawClipFrame(sg, it, t - it.s); await computeMask(it.c.id, m.src, t); }
+            else if (it.c.rmbg && it.c.kind !== 'image'){ const m = slot(it.c.id), sg = m.src.getContext('2d'); sg.clearRect(0, 0, OUT_W, OUT_H); drawClipFrame(sg, it, t - it.s); await computeMask(it.c.id, m.src, t); }
           } catch (e) { console.warn('recorte do quadro falhou', e); }
         }
       }
@@ -2175,6 +2576,14 @@ async function alignWords(file, text){
   let acc = 0;
   return words.map((w, i) => { const s0 = at(acc / sum); acc += weights[i]; return { w, s: s0, e: at((acc - (weights[i] - w.length - 1)) / sum) }; });
 }
+function approximateWords(file, text, fallbackDuration){
+  const dur = Number.isFinite(Number(fallbackDuration)) && Number(fallbackDuration) > 0 ? Number(fallbackDuration) : 1;
+  const arr = text.split(/\s+/).filter(Boolean);
+  const weights=arr.map(w=>w.length+1+(/[.!?…]$/.test(w)?3:0));
+  const sum=weights.reduce((a,b)=>a+b,0)||1;
+  let pos=0;
+  return arr.map((w,i)=>{ const start=pos/sum*dur; pos+=weights[i]; return {w,s:start,e:pos/sum*dur}; });
+}
 function captionsFromWords(words, n){
   const out = [];
   for (let i = 0; i < words.length; i += n){
@@ -2197,7 +2606,8 @@ async function makeCaptions(listen){
   try{
     if (!listen && text){
       setMsg('#capMsg', 'Acertando o tempo de cada palavra…'); setBar('#capBar', 0.3);
-      S.words = await alignWords(f, text); S.chunks = []; store.set('chunks', []);
+      S.words = (LOW_MEMORY || f.size > 18*1024*1024) ? approximateWords(f,text,vid.duration) : await alignWords(f, text);
+      S.chunks = []; store.set('chunks', []);
       if (!$('#postText').value.trim()) $('#postText').value = text.split(/[.!?](\s|$)/)[0].slice(0, 140);
     } else {
       const r = await runTranscribe(f, '#capBar', '#capMsg');
@@ -2274,7 +2684,7 @@ vid.addEventListener('ended', () => { S.playing = false; $('#btnPlay').textConte
 
 /* ---------- 8. exportar ---------- */
 function pickMime(){
-  const list = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  const list = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4'];
   return list.find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
 }
 $('#btnExport').addEventListener('click', async () => {
@@ -2287,7 +2697,7 @@ $('#btnExport').addEventListener('click', async () => {
     setMsg('#expMsg','Preparando…'); setBar('#expBar', 0);
     let res = null;
     try {
-      res = await exportOffline((p, m) => { setBar('#expBar', p); $('#expMsg').textContent = m || `Montando o vídeo quadro a quadro… ${Math.round(p * 100)}%. Pode demorar um pouco, mas o vídeo sai liso. Não saia do app.`; });
+      if (!LOW_MEMORY) res = await exportOffline((p, m) => { setBar('#expBar', p); $('#expMsg').textContent = m || `Montando o vídeo quadro a quadro… ${Math.round(p * 100)}%. Pode demorar um pouco, mas o vídeo sai liso. Não saia do app.`; });
     } catch (e) { if (/cancelada/.test(e.message)) throw e; console.warn('exportação quadro a quadro falhou', e); res = null; }
     if (!res){
       setMsg('#expMsg', 'Este navegador não monta quadro a quadro. Gravando em tempo real…');
@@ -2328,8 +2738,21 @@ $('#tabFlow').addEventListener('click', () => showTab(false));
 $('#tabModel').addEventListener('click', () => showTab(true));
 $('#modelTab').style.display = 'none';
 $('#mFile').addEventListener('change', e => { const f = e.target.files[0]; if (!f) return; MD.file = f; $('#mFileName').textContent = f.name; });
-const blockReal = t => NO_POLITICS.test(t);
 function sceneFala(){ return MD.scenes.map(s => s.fala.trim()).filter(Boolean).join(' '); }
+/* Modo independente do Gemini: permite continuar a edição durante um 503. */
+$('#btnManualScript').addEventListener('click',()=>{
+  const source=$('#manualScript').value.trim();
+  if(!source) return setMsg('#manualMsg','Cole o texto da narração para criar as cenas.','err');
+  const paragraphs=source.split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean);
+  if(!paragraphs.length) return setMsg('#manualMsg','Informe pelo menos uma cena.','err');
+  MD.scenes=paragraphs.map((fala,i)=>({
+    fala,cenario:'Cenário da cena '+(i+1),texto:'',
+    dur:Math.max(3,Math.min(60,fala.split(/\s+/).length/2.5)),img:null
+  }));
+  renderScenes();
+  setMsg('#manualMsg',MD.scenes.length+' cenas criadas do seu texto. Edite as falas e cenários abaixo.','ok');
+  setMsg('#mMsg','Roteiro manual pronto; você pode seguir para o avatar e a edição.','ok');
+});
 /* 1. análise do modelo com o Gemini */
 async function videoFrames(file, n){
   const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.src = URL.createObjectURL(file);
@@ -2342,33 +2765,28 @@ async function videoFrames(file, n){
 $('#btnAnalyze').addEventListener('click', async () => {
   if (!MD.file) return setMsg('#mMsg', 'Escolha o vídeo modelo primeiro.', 'err');
   const theme = $('#mTheme').value.trim();
-  if (blockReal(theme)) return setMsg('#mMsg', 'Não crio vídeos com políticos ou pessoas reais conhecidas falando. Mude o tema.', 'err');
-  const b = $('#btnAnalyze'); b.disabled = true; setBar('#mBar', 0.1);
+  const b = $('#btnAnalyze'); b.disabled = true; const job=beginJob('analyze','#btnCancelAnalyze'); setBar('#mBar', 0.1);
   try {
-    setMsg('#mMsg', 'Lendo o vídeo modelo…');
-    const { dur, frames } = await videoFrames(MD.file, 8);
-    let audio = null; try { audio = await decodeAudio(MD.file); } catch {}
-    setBar('#mBar', 0.35); setMsg('#mMsg', 'O Gemini está assistindo ao modelo e escrevendo o roteiro novo…');
-    const parts = frames.map(f => ({ inline_data:{ mime_type:'image/jpeg', data: f.b64 } }));
-    if (audio && audio.length / 16000 < 540) parts.push({ inline_data:{ mime_type:'audio/wav', data: wavBase64(audio) } });
-    parts.push({ text: `As imagens são quadros em ordem de um vídeo curto de ${dur.toFixed(1)} segundos (um a cada ${(dur / 8).toFixed(1)} s) e o áudio é a fala dele. Entenda como o vídeo é montado: divisão em cenas, tempo de cada cena, ritmo, o que aparece no fundo, os textos na tela e o tom da fala.
+    const part = await geminiFilePart(MD.file, m=>setMsg('#mMsg',m), job.signal);
+    setBar('#mBar', 0.4); setMsg('#mMsg', 'O Gemini está analisando o vídeo e criando o roteiro…');
+    const parts = [part];
+    parts.push({ text: `Assista ao vídeo original, incluindo imagens e áudio. Entenda a divisão em cenas, o tempo de cada cena, o ritmo, o fundo, os textos na tela e o tom da fala.
 Depois crie um vídeo NOVO com a mesma estrutura (mesmo número de cenas, tempos parecidos, mesmo ritmo e mesmo estilo de texto na tela). ${theme ? 'Tema do vídeo novo: ' + theme + '.' : 'Mantenha o mesmo assunto, mas com outras palavras e outros cenários.'}
-Regras: falas em português do Brasil, naturais, para uma única pessoa falar olhando para a câmera. Não use nomes de pessoas reais e não atribua falas a pessoas reais. Os cenários não devem ter pessoas reais conhecidas.
+Regras: falas em português do Brasil, naturais, para uma pessoa falar olhando para a câmera. Preserve nomes de pessoas, entidades e marcas quando forem relevantes ao tema. Não apresente falas inventadas como citações autênticas de pessoas reais.
 Responda só JSON: {"estilo":"resumo curto do formato","cenas":[{"inicio":0,"fim":4.5,"fala":"o que o avatar fala nessa cena","cenario":"descrição visual do fundo, em português","texto_tela":"texto curto na tela ou vazio"}]}` });
-    const out = await gemini(parts, true);
+    const out = await gemini(parts, true, job.signal,m=>setMsg('#mMsg',m));
     let j; try { j = JSON.parse(out.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim()); } catch { throw new Error('O Gemini respondeu num formato inesperado. Tente de novo.'); }
     const cenas = (j.cenas || []).filter(c => c && (c.fala || c.cenario));
     if (!cenas.length) throw new Error('O Gemini não conseguiu dividir o vídeo em cenas. Tente de novo.');
     MD.scenes = cenas.map(c => ({ fala: String(c.fala || ''), cenario: String(c.cenario || ''), texto: String(c.texto_tela || ''), dur: Math.max(1, toSec(c.fim) - toSec(c.inicio)), img: null }));
     renderScenes();
     setMsg('#mMsg', `${MD.scenes.length} cenas criadas${j.estilo ? ' · ' + j.estilo : ''}. Revise as falas, gere os cenários e siga para o avatar.`, 'ok');
-  } catch (e) { setMsg('#mMsg', e.message || String(e), 'err'); }
-  setBar('#mBar', null); b.disabled = false;
+  } catch (e) { setMsg('#mMsg', jobError(e).message || String(e), 'err'); if(e?.name !== 'AbortError') $('#manualScriptBox').open = true; }
+  finishJob('analyze','#btnCancelAnalyze'); setBar('#mBar', null); b.disabled = false;
 });
 /* cenários: imagem por IA (grátis, Pollinations) ou foto livre */
 let lastGen = 0;
 async function genImage(promptPt, w, h, onMsg){
-  if (blockReal(promptPt)) throw new Error('Não gero imagens de políticos ou pessoas reais conhecidas.');
   const wait = 46000 - (Date.now() - lastGen);
   for (let left = wait; left > 0; left -= 1000){ onMsg?.(`A IA grátis libera uma imagem a cada 45 segundos. Faltam ${Math.ceil(left / 1000)} s…`); await new Promise(r => setTimeout(r, 1000)); }
   lastGen = Date.now(); onMsg?.('Criando a imagem…');
@@ -2390,12 +2808,12 @@ function renderScenes(){
     const msg = document.createElement('div'); msg.className = 'msg';
     const row = document.createElement('div'); row.className = 'row';
     const mk = (txt, fn) => { const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn'; bt.textContent = txt; bt.addEventListener('click', async () => { bt.disabled = true; try { await fn(); } catch (e) { msg.textContent = e.message; msg.className = 'msg err'; } bt.disabled = false; }); row.append(bt); };
-    mk('Criar cenário com IA', async () => { sc.img = await genImage(sc.cenario + ', vertical background scene, no people, no text, detailed, high quality', 432, 768, m => { msg.textContent = m; msg.className = 'msg'; }); th.style.backgroundImage = `url("${sc.img.src}")`; msg.textContent = 'Cenário pronto.'; msg.className = 'msg ok'; });
+    mk('Criar cenário com IA', async () => { sc.img = await genImage(sc.cenario + ', vertical background scene, detailed, high quality', OUT_W, OUT_H, m => { msg.textContent = m; msg.className = 'msg'; }); th.style.backgroundImage = `url("${sc.img.src}")`; msg.textContent = 'Cenário pronto.'; msg.className = 'msg ok'; });
     mk('Buscar foto', async () => {
       msg.textContent = 'Buscando…'; msg.className = 'msg';
       const j = await (await fetch('https://api.openverse.org/v1/images/?page_size=8&mature=false&q=' + encodeURIComponent(await toEnglish(sc.cenario)))).json();
       const it = (j.results || []).find(x => x.thumbnail); if (!it) throw new Error('Nenhuma foto encontrada. Mude a descrição do cenário.');
-      sc.img = await loadURL(it.thumbnail); th.style.backgroundImage = `url("${sc.img.src}")`; msg.textContent = `Foto de ${it.creator || 'autor desconhecido'} (${(it.license || '').toUpperCase()}).`; msg.className = 'msg ok';
+      sc.img = await loadURL(it.url || it.thumbnail).catch(() => loadURL(it.thumbnail)); th.style.backgroundImage = `url("${sc.img.src}")`; msg.textContent = `Foto de ${it.creator || 'autor desconhecido'} (${(it.license || '').toUpperCase()}).`; msg.className = 'msg ok';
     });
     const up = document.createElement('div'); up.className = 'file'; up.style.padding = '8px'; up.innerHTML = '<b>Minha imagem</b>';
     const ui = document.createElement('input'); ui.type = 'file'; ui.accept = 'image/*'; ui.addEventListener('change', async () => { const file = ui.files[0]; if (!file) return; sc.img = await loadImage(file); th.style.backgroundImage = `url("${sc.img.src}")`; }); up.append(ui); row.append(up);
@@ -2412,10 +2830,10 @@ $('#btnAvGen').addEventListener('click', async () => {
   const type = $('#mAvType').value, style = $('#mAvStyle').value;
   const prompt = type === 'pet'
     ? `${style}, retrato de um pet: ${desc}, olhando para a câmera, de frente, boca fechada, corpo até o peito, fundo liso neutro, iluminação suave`
-    : `${style}, retrato de uma pessoa fictícia: ${desc}, olhando para a câmera, de frente, boca fechada, da cintura para cima, fundo liso neutro, iluminação de estúdio`;
+    : `${style}, retrato de uma pessoa: ${desc}, olhando para a câmera, de frente, boca fechada, da cintura para cima, fundo liso neutro, iluminação de estúdio`;
   const b = $('#btnAvGen'); b.disabled = true;
   try {
-    const img = await genImage(prompt, 432, 768, m => setMsg('#mAvMsg', m));
+    const img = await genImage(prompt, OUT_W, OUT_H, m => setMsg('#mAvMsg', m));
     img.addEventListener('click', () => setAvatar(img, null)); $('#avList').prepend(img); setAvatar(img, null);
     setMsg('#mAvMsg', 'Avatar criado. Toque em outro para trocar, ou crie mais um.', 'ok');
   } catch (e) { setMsg('#mAvMsg', e.message, 'err'); }
@@ -2447,7 +2865,7 @@ function costHint(){ const a = $('#mVoice'); a.onloadedmetadata = () => { if (is
 /* 4. avatar falando */
 function showTalk(file){ MD.talk = file; const v = $('#mTalk'); v.src = URL.createObjectURL(file); v.hidden = false; }
 $('#btnMDream').addEventListener('click', async () => {
-  if (!$('#mOk').checked) return setMsg('#mDreamMsg', 'Marque a confirmação de que o avatar é de IA ou seu.', 'err');
+  if (!$('#mOk').checked) return setMsg('#mDreamMsg', 'Confirme que você tem autorização para usar a imagem e a voz.', 'err');
   if (!MD.voice) return setMsg('#mDreamMsg', 'Gere ou envie a voz no passo 3.', 'err');
   if (!($('#mDreamKey').value.trim() || $('#dreamKey').value.trim())) return setMsg('#mDreamMsg', 'Coloque a chave da DreamAPI logo abaixo.', 'err');
   const b = $('#btnMDream'); b.disabled = true; setBar('#mDreamBar', 0.05);
@@ -2480,7 +2898,7 @@ $('#btnMDream').addEventListener('click', async () => {
   setBar('#mDreamBar', null); b.disabled = false;
 });
 $('#btnMFree').addEventListener('click', async () => {
-  if (!$('#mOk').checked) return setMsg('#mDreamMsg', 'Marque a confirmação de que o avatar é de IA ou seu.', 'err');
+  if (!$('#mOk').checked) return setMsg('#mDreamMsg', 'Confirme que você tem autorização para usar a imagem e a voz.', 'err');
   if (!MD.voice) return setMsg('#mDreamMsg', 'Gere ou envie a voz no passo 3.', 'err');
   try {
     const blob = await avatarBlob();
@@ -2513,7 +2931,7 @@ $('#btnMBuild').addEventListener('click', async () => {
     S.finalFile = MD.talk; $('#finalName').textContent = 'Avatar falando (Criar com modelo)'; loadWorkVideo(MD.talk); clearCaptions();
     $('#rmBg').checked = true;
     const roteiro = sceneFala(); $('#rewritten').value = roteiro; store.set('rewritten', roteiro);
-    const words = await alignWords(MD.talk, roteiro);
+    const words = (LOW_MEMORY || MD.talk.size > 18*1024*1024) ? approximateWords(MD.talk, roteiro, vid.duration || MD.scenes.reduce((a,c)=>a+c.dur,0)) : await alignWords(MD.talk, roteiro);
     let k = 0; const scenes = [];
     MD.scenes.forEach((sc, i) => {
       const n = sc.fala.split(/\s+/).filter(Boolean).length, first = words[k], last = words[Math.min(words.length - 1, k + Math.max(1, n) - 1)];
@@ -2566,6 +2984,36 @@ if (S.captions.length) renderCapList();
 if ($('#transcript').value.trim()) { markDone(2); updateClaudeLink(); }
 if ($('#rewritten').value.trim()) markDone(3);
 refreshBg();
+if (LOW_MEMORY) $('#engine').textContent='Modo leve Android · 540p';
+
+/* ---------- backup portátil (sem rede, sem pedir nova chave) ---------- */
+$('#btnBackup').addEventListener('click',async()=>{
+  if(!confirm('O arquivo de backup pode conter chaves de API e textos privados. Guarde-o em local seguro e não compartilhe. Continuar?'))return;
+  const settings={};
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);if(k&&k.startsWith('ea.')) settings[k]=localStorage.getItem(k);
+  }
+  const temporary={};
+  const gh=sessionStorage.getItem('ea.ghToken');
+  if(gh&&confirm('Incluir também o token temporário do GitHub neste backup? O arquivo ficará sensível.')) temporary['ea.ghToken']=gh;
+  const backup={app:'Estudio Avatar',version:'6.4',date:new Date().toISOString(),settings,temporary};
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='estudio-avatar-dados-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+  setMsg('#backupMsg','Backup criado no aparelho. Guarde o arquivo com segurança.','ok');
+});
+$('#backupInput').addEventListener('change',async e=>{
+  const f=e.target.files?.[0];if(!f)return;
+  try{
+    if(f.size>1048576)throw new Error('Backup maior que 1 MB. Confira o arquivo.');
+    const data=JSON.parse(await f.text());
+    if(data.app!=='Estudio Avatar'||!data.settings||typeof data.settings!=='object')throw new Error('Este não é um backup do Estúdio Avatar.');
+    if(!confirm('Restaurar configurações e textos deste backup e recarregar o app? Os dados atuais podem ser substituídos.'))return;
+    for(const [k,v] of Object.entries(data.settings))if(/^ea\.[A-Za-z0-9._-]{1,80}$/.test(k)&&typeof v==='string')localStorage.setItem(k,v);
+    if(data.temporary&&typeof data.temporary['ea.ghToken']==='string')sessionStorage.setItem('ea.ghToken',data.temporary['ea.ghToken']);
+    location.reload();
+  }catch(err){setMsg('#backupMsg',err.message||'Backup inválido.','err');}
+});
 </script>
 </body>
 </html>
